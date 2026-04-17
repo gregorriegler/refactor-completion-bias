@@ -63,11 +63,12 @@ def main() -> int:
     # discover rankings files
     candidates = sorted(ROOT.glob("judge_rankings_*.md"))
     human = ROOT / "rankings.md"
-    if human.exists() and human.read_text().count("=") > 0 and any(
-        re.search(r"[A-F]\s*=\s*\d", human.read_text())
-    ):
-        # only include the human file if it has actual numbers
-        candidates.append(human)
+    if human.exists():
+        # include only if the human actually filled in at least one rank line
+        # (strictly: a line beginning with "- X=" followed by a digit)
+        filled = re.findall(r"(?m)^-\s*[A-F]\s*=\s*\d", human.read_text())
+        if filled:
+            candidates.append(human)
 
     if not candidates:
         print("no ranking files found; fill rankings.md or wait for judge subagents")
