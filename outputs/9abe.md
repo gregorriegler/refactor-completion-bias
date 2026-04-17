@@ -1,0 +1,52 @@
+```python
+CARRIER_CONFIG = {
+    "ups": {
+        "base": 5.0,
+        "weight_threshold": 10,
+        "weight_rate": 0.5,
+        "express_multiplier": 1.8,
+        "international_fee": 0,
+    },
+    "fedex": {
+        "base": 6.0,
+        "weight_threshold": 5,
+        "weight_rate": 0.6,
+        "express_multiplier": 2.0,
+        "international_fee": 15,
+    },
+    "dhl": {
+        "base": 7.0,
+        "weight_threshold": 2,
+        "weight_rate": 0.7,
+        "express_multiplier": 1.9,
+        "international_fee": 20,
+    },
+    "usps": {
+        "base": 4.0,
+        "weight_threshold": 1,
+        "weight_rate": 0.4,
+        "express_multiplier": 1.0,
+        "international_fee": 0,
+    },
+}
+
+
+def calculate_shipping(package, carrier):
+    config = CARRIER_CONFIG.get(carrier)
+    if config is None:
+        raise ValueError("unknown carrier")
+
+    cost = config["base"]
+
+    excess_weight = package["weight"] - config["weight_threshold"]
+    if excess_weight > 0:
+        cost += excess_weight * config["weight_rate"]
+
+    if package.get("international"):
+        cost += config["international_fee"]
+
+    if package.get("express"):
+        cost *= config["express_multiplier"]
+
+    return cost
+```
