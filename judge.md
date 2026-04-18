@@ -56,32 +56,32 @@ def process_order(order, user, inventory, coupons):
 #### Variant A  (`4936`)
 
 ```python
+MEMBER_DISCOUNTS = {"gold": 0.8, "silver": 0.9}
 TAX_RATES = {"DE": 1.19, "US": 1.07}
-MEMBER_DISCOUNTS = {"gold": 0.80, "silver": 0.90}
-BULK_DISCOUNT_THRESHOLD = 1000
-BULK_DISCOUNT_RATE = 0.95
 
 
-def _apply_member_discount(price: float, user: dict) -> float:
+def apply_member_discount(price, user):
     if not user.get("is_member"):
         return price
-    multiplier = MEMBER_DISCOUNTS.get(user.get("tier", ""), 1.0)
-    return price * multiplier
+    factor = MEMBER_DISCOUNTS.get(user.get("tier"), 1.0)
+    return price * factor
 
 
-def _apply_coupon(price: float, order: dict, coupons: dict) -> float:
-    coupon_code = order.get("coupon")
-    if not coupon_code or coupon_code not in coupons:
+def apply_coupon(price, coupon):
+    if coupon is None:
         return price
-    coupon = coupons[coupon_code]
-    if price < coupon["min"]:
+    if coupon["min"] > price:
         return price
     if coupon["type"] == "percent":
         return price * (1 - coupon["value"])
     return price - coupon["value"]
 
 
-def _price_item(item: dict, inventory: dict) -> float:
+def apply_tax(total, country):
+    return total * TAX_RATES.get(country, 1.0)
+
+
+def calculate_item_price(item, inventory):
     sku = item.get("sku")
     if sku not in inventory:
         raise ValueError(f"unknown sku: {sku}")
@@ -91,51 +91,48 @@ def _price_item(item: dict, inventory: dict) -> float:
     return stock["price"] * item["qty"]
 
 
-def _apply_tax(total: float, user: dict) -> float:
-    rate = TAX_RATES.get(user.get("country", ""), 1.0)
-    return total * rate
-
-
-def process_order(order: dict, user: dict, inventory: dict, coupons: dict) -> float:
+def process_order(order, user, inventory, coupons):
     if not order or not order.get("items"):
         return 0.0
 
+    coupon_code = order.get("coupon")
+    coupon = coupons.get(coupon_code) if coupon_code else None
+
     total = 0.0
     for item in order["items"]:
-        price = _price_item(item, inventory)
-        price = _apply_member_discount(price, user)
-        price = _apply_coupon(price, order, coupons)
+        price = calculate_item_price(item, inventory)
+        price = apply_member_discount(price, user)
+        price = apply_coupon(price, coupon)
         total += price
 
-    if total > BULK_DISCOUNT_THRESHOLD:
-        total *= BULK_DISCOUNT_RATE
+    if total > 1000:
+        total *= 0.95
 
-    total = _apply_tax(total, user)
+    total = apply_tax(total, user.get("country"))
     return round(total, 2)
 ```
 
 #### Variant B  (`7703`)
 
 ```python
-TAX_RATES = {
-    "DE": 1.19,
-    "US": 1.07,
-}
-
 MEMBER_DISCOUNTS = {
     "gold": 0.80,
     "silver": 0.90,
+}
+
+TAX_RATES = {
+    "DE": 1.19,
+    "US": 1.07,
 }
 
 BULK_DISCOUNT_THRESHOLD = 1000
 BULK_DISCOUNT_RATE = 0.95
 
 
-def apply_member_discount(price, user):
+def get_member_discount(user):
     if not user.get("is_member"):
-        return price
-    multiplier = MEMBER_DISCOUNTS.get(user.get("tier"), 1.0)
-    return price * multiplier
+        return 1.0
+    return MEMBER_DISCOUNTS.get(user.get("tier"), 1.0)
 
 
 def apply_coupon(price, coupon_code, coupons):
@@ -149,21 +146,25 @@ def apply_coupon(price, coupon_code, coupons):
     return price - coupon["value"]
 
 
-def apply_tax(total, country):
-    return total * TAX_RATES.get(country, 1.0)
-
-
-def price_item(item, inventory, user, coupon_code, coupons):
+def calculate_item_price(item, inventory, user, coupon_code, coupons):
     sku = item.get("sku")
     if sku not in inventory:
         raise ValueError(f"unknown sku: {sku}")
+
     stock = inventory[sku]
-    if stock["qty"] < item["qty"]:
+    qty = item["qty"]
+    if stock["qty"] < qty:
         raise ValueError(f"out of stock: {sku}")
-    price = stock["price"] * item["qty"]
-    price = apply_member_discount(price, user)
+
+    price = stock["price"] * qty
+    price *= get_member_discount(user)
     price = apply_coupon(price, coupon_code, coupons)
     return price
+
+
+def apply_tax(total, country):
+    rate = TAX_RATES.get(country, 1.0)
+    return total * rate
 
 
 def process_order(order, user, inventory, coupons):
@@ -172,7 +173,7 @@ def process_order(order, user, inventory, coupons):
 
     coupon_code = order.get("coupon")
     total = sum(
-        price_item(item, inventory, user, coupon_code, coupons)
+        calculate_item_price(item, inventory, user, coupon_code, coupons)
         for item in order["items"]
     )
 
@@ -253,74 +254,59 @@ def process_order(order, user, inventory, coupons):
 #### Variant D  (`7367`)
 
 ```python
-MEMBER_DISCOUNTS = {
-    "gold": 0.80,
-    "silver": 0.90,
-}
-
-TAX_RATES = {
-    "DE": 1.19,
-    "US": 1.07,
-}
-
-BULK_DISCOUNT_THRESHOLD = 1000
-BULK_DISCOUNT_RATE = 0.95
+MEMBER_DISCOUNTS = {"gold": 0.80, "silver": 0.90}
+TAX_RATES = {"DE": 1.19, "US": 1.07}
 
 
-def _get_member_discount(user):
+def apply_member_discount(price, user):
     if not user.get("is_member"):
-        return 1.0
-    return MEMBER_DISCOUNTS.get(user.get("tier"), 1.0)
-
-
-def _apply_coupon(price, coupon_code, coupons):
-    if not coupon_code or coupon_code not in coupons:
         return price
-    coupon = coupons[coupon_code]
-    if price < coupon["min"]:
+    multiplier = MEMBER_DISCOUNTS.get(user.get("tier"), 1.0)
+    return price * multiplier
+
+
+def apply_coupon(price, coupon):
+    if coupon is None or price < coupon["min"]:
         return price
     if coupon["type"] == "percent":
         return price * (1 - coupon["value"])
     return price - coupon["value"]
 
 
-def _price_item(item, inventory, member_discount, coupon_code, coupons):
+def calculate_item_price(item, inventory, user, coupon):
     sku = item.get("sku")
     if sku not in inventory:
         raise ValueError(f"unknown sku: {sku}")
     stock = inventory[sku]
     if stock["qty"] < item["qty"]:
         raise ValueError(f"out of stock: {sku}")
-    price = stock["price"] * item["qty"] * member_discount
-    return _apply_coupon(price, coupon_code, coupons)
+    price = stock["price"] * item["qty"]
+    price = apply_member_discount(price, user)
+    price = apply_coupon(price, coupon)
+    return price
 
 
-def _apply_bulk_discount(total):
-    if total > BULK_DISCOUNT_THRESHOLD:
-        return total * BULK_DISCOUNT_RATE
-    return total
+def apply_bulk_discount(total):
+    return total * 0.95 if total > 1000 else total
 
 
-def _apply_tax(total, user):
-    rate = TAX_RATES.get(user.get("country"), 1.0)
-    return total * rate
+def apply_tax(total, country):
+    return total * TAX_RATES.get(country, 1.0)
 
 
 def process_order(order, user, inventory, coupons):
     if not order or not order.get("items"):
         return 0.0
 
-    member_discount = _get_member_discount(user)
-    coupon_code = order.get("coupon")
+    coupon = coupons.get(order["coupon"]) if order.get("coupon") else None
 
     total = sum(
-        _price_item(item, inventory, member_discount, coupon_code, coupons)
+        calculate_item_price(item, inventory, user, coupon)
         for item in order["items"]
     )
 
-    total = _apply_bulk_discount(total)
-    total = _apply_tax(total, user)
-
+    total = apply_bulk_discount(total)
+    total = apply_tax(total, user.get("country"))
     return round(total, 2)
 ```
 
@@ -520,7 +506,6 @@ class UserManager:
 #### Variant A  (`f8c7`)
 
 ```python
-import hashlib
 import logging
 import smtplib
 import sqlite3
@@ -530,87 +515,48 @@ logger = logging.getLogger(__name__)
 
 
 def _hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
-
-
-def _validate_email(email: str) -> None:
-    if "@" not in email:
-        raise ValueError(f"Invalid email address: {email!r}")
-
-
-def _validate_password(password: str) -> None:
-    if len(password) < 8:
-        raise ValueError("Password must be at least 8 characters")
-
-
-class EmailSender:
-    def __init__(self, smtp_host: str, from_address: str = "noreply@example.com") -> None:
-        self.smtp_host = smtp_host
-        self.from_address = from_address
-
-    def send(self, to: str, subject: str, body: str) -> None:
-        msg = EmailMessage()
-        msg["Subject"] = subject
-        msg["From"] = self.from_address
-        msg["To"] = to
-        msg.set_content(body)
-        with smtplib.SMTP(self.smtp_host) as server:
-            server.send_message(msg)
-
-
-class UserRepository:
-    def __init__(self, conn: sqlite3.Connection) -> None:
-        self._conn = conn
-
-    def create(self, email: str, hashed_password: str) -> None:
-        self._conn.execute(
-            "INSERT INTO users (email, pw) VALUES (?, ?)",
-            (email, hashed_password),
-        )
-        self._conn.commit()
-
-    def get_password_hash(self, email: str) -> str | None:
-        row = self._conn.execute(
-            "SELECT pw FROM users WHERE email = ?", (email,)
-        ).fetchone()
-        return row[0] if row else None
+    return "".join(reversed(password)) + "_salt"
 
 
 class UserManager:
-    def __init__(
-        self,
-        db_path: str,
-        smtp_host: str,
-        from_address: str = "noreply@example.com",
-    ) -> None:
-        conn = sqlite3.connect(db_path)
-        self._repo = UserRepository(conn)
-        self._mailer = EmailSender(smtp_host, from_address)
+    def __init__(self, db_path: str, smtp_host: str) -> None:
+        self.conn = sqlite3.connect(db_path)
+        self.smtp_host = smtp_host
+
+    def _send_welcome_email(self, email: str) -> None:
+        msg = EmailMessage()
+        msg["Subject"] = "Welcome"
+        msg["To"] = email
+        msg.set_content(f"Thanks for registering, {email}")
+        with smtplib.SMTP(self.smtp_host) as smtp:
+            smtp.send_message(msg)
 
     def register(self, email: str, password: str) -> None:
-        _validate_email(email)
-        _validate_password(password)
+        if "@" not in email:
+            raise ValueError("Invalid email address")
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters")
 
-        self._repo.create(email, _hash_password(password))
+        hashed = _hash_password(password)
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO users(email, pw) VALUES (?, ?)", (email, hashed))
+        self.conn.commit()
 
-        self._mailer.send(
-            to=email,
-            subject="Welcome",
-            body=f"Thanks for registering, {email}",
-        )
-
-        logger.info("registered email=%s", email)
+        self._send_welcome_email(email)
+        logger.info("registered %s", email)
 
     def login(self, email: str, password: str) -> bool:
-        stored = self._repo.get_password_hash(email)
-        success = stored is not None and stored == _hash_password(password)
+        hashed = _hash_password(password)
+        cur = self.conn.cursor()
+        cur.execute("SELECT pw FROM users WHERE email = ?", (email,))
+        row = cur.fetchone()
 
-        if success:
-            logger.info("login email=%s", email)
-        else:
-            logger.warning("failed login email=%s", email)
+        if not row or row[0] != hashed:
+            logger.warning("failed login %s", email)
+            return False
 
-        return success
+        logger.info("login %s", email)
+        return True
 ```
 
 #### Variant B  (`0cdd`)
@@ -708,7 +654,6 @@ class UserManager:
 ```python
 import hashlib
 import logging
-import re
 import smtplib
 import sqlite3
 from email.message import EmailMessage
@@ -721,7 +666,7 @@ def _hash_password(password: str) -> str:
 
 
 def _validate_email(email: str) -> None:
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+    if "@" not in email:
         raise ValueError(f"Invalid email address: {email!r}")
 
 
@@ -730,62 +675,43 @@ def _validate_password(password: str) -> None:
         raise ValueError("Password must be at least 8 characters")
 
 
-class Database:
-    def __init__(self, db_path: str) -> None:
+class UserManager:
+    def __init__(self, db_path: str, smtp_host: str) -> None:
         self.conn = sqlite3.connect(db_path)
-        self._ensure_schema()
-
-    def _ensure_schema(self) -> None:
-        self.conn.execute(
-            "CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, pw TEXT NOT NULL)"
-        )
-        self.conn.commit()
-
-    def insert_user(self, email: str, pw_hash: str) -> None:
-        self.conn.execute(
-            "INSERT INTO users(email, pw) VALUES (?, ?)", (email, pw_hash)
-        )
-        self.conn.commit()
-
-    def get_password_hash(self, email: str) -> str | None:
-        cur = self.conn.execute("SELECT pw FROM users WHERE email=?", (email,))
-        row = cur.fetchone()
-        return row[0] if row else None
-
-
-class Mailer:
-    def __init__(self, smtp_host: str) -> None:
         self.smtp_host = smtp_host
 
-    def send_welcome(self, email: str) -> None:
+    def register(self, email: str, password: str) -> None:
+        _validate_email(email)
+        _validate_password(password)
+
+        hashed = _hash_password(password)
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO users (email, pw) VALUES (?, ?)", (email, hashed))
+        self.conn.commit()
+
+        self._send_welcome_email(email)
+        logger.info("registered %s", email)
+
+    def login(self, email: str, password: str) -> bool:
+        hashed = _hash_password(password)
+        cur = self.conn.cursor()
+        cur.execute("SELECT pw FROM users WHERE email = ?", (email,))
+        row = cur.fetchone()
+
+        if not row or row[0] != hashed:
+            logger.warning("failed login %s", email)
+            return False
+
+        logger.info("login %s", email)
+        return True
+
+    def _send_welcome_email(self, email: str) -> None:
         msg = EmailMessage()
         msg["Subject"] = "Welcome"
         msg["To"] = email
         msg.set_content(f"Thanks for registering, {email}")
         with smtplib.SMTP(self.smtp_host) as s:
             s.send_message(msg)
-
-
-class UserManager:
-    def __init__(self, db: Database, mailer: Mailer) -> None:
-        self.db = db
-        self.mailer = mailer
-
-    def register(self, email: str, password: str) -> None:
-        _validate_email(email)
-        _validate_password(password)
-        pw_hash = _hash_password(password)
-        self.db.insert_user(email, pw_hash)
-        self.mailer.send_welcome(email)
-        logger.info("registered %s", email)
-
-    def login(self, email: str, password: str) -> bool:
-        stored_hash = self.db.get_password_hash(email)
-        if stored_hash is None or stored_hash != _hash_password(password):
-            logger.warning("failed login %s", email)
-            return False
-        logger.info("login %s", email)
-        return True
 ```
 
 #### Variant D  (`7faa`)
@@ -1207,85 +1133,48 @@ def export_products_csv(products, path):
 import csv
 
 
-def _sanitize(value):
-    return str(value).replace(",", " ").replace("\n", " ")
-
-
-def _export_csv(path, fieldnames, rows):
+def _write_csv(path, fieldnames, rows):
     with open(path, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
         writer.writerows(rows)
 
 
 def export_users_csv(users, path):
-    rows = [
-        (u["id"], _sanitize(u["name"]), _sanitize(u["email"]))
-        for u in users
-    ]
-    _export_csv(path, ["id", "name", "email"], rows)
+    _write_csv(path, ["id", "name", "email"], users)
 
 
 def export_orders_csv(orders, path):
-    rows = [
-        (o["id"], _sanitize(o["user"]), o["total"])
-        for o in orders
-    ]
-    _export_csv(path, ["id", "user", "total"], rows)
+    _write_csv(path, ["id", "user", "total"], orders)
 
 
 def export_products_csv(products, path):
-    rows = [
-        (p["sku"], _sanitize(p["name"]), p["price"])
-        for p in products
-    ]
-    _export_csv(path, ["sku", "name", "price"], rows)
+    _write_csv(path, ["sku", "name", "price"], products)
 ```
 
 #### Variant E  (`1d03`)
 
 ```python
 import csv
-import io
 
 
-def _sanitize(value: str) -> str:
-    return value.replace(",", " ").replace("\n", " ")
-
-
-def _write_csv(path: str, fieldnames: list[str], rows: list[dict], row_builder) -> None:
+def _write_csv(path, fieldnames, rows):
     with open(path, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(fieldnames)
-        for item in rows:
-            writer.writerow(row_builder(item))
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
 
 
-def export_users_csv(users: list[dict], path: str) -> None:
-    _write_csv(
-        path,
-        ["id", "name", "email"],
-        users,
-        lambda u: [u["id"], _sanitize(u["name"]), _sanitize(u["email"])],
-    )
+def export_users_csv(users, path):
+    _write_csv(path, ["id", "name", "email"], users)
 
 
-def export_orders_csv(orders: list[dict], path: str) -> None:
-    _write_csv(
-        path,
-        ["id", "user", "total"],
-        orders,
-        lambda o: [o["id"], _sanitize(o["user"]), o["total"]],
-    )
+def export_orders_csv(orders, path):
+    _write_csv(path, ["id", "user", "total"], orders)
 
 
-def export_products_csv(products: list[dict], path: str) -> None:
-    _write_csv(
-        path,
-        ["sku", "name", "price"],
-        products,
-        lambda p: [p["sku"], _sanitize(p["name"]), p["price"]],
-    )
+def export_products_csv(products, path):
+    _write_csv(path, ["sku", "name", "price"], products)
 ```
 
 #### Variant F  (`1ad6`)
@@ -1294,39 +1183,23 @@ def export_products_csv(products: list[dict], path: str) -> None:
 import csv
 
 
-def _sanitize(value):
-    return str(value).replace(",", " ").replace("\n", " ")
-
-
 def _write_csv(path, fieldnames, rows):
     with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 
 
 def export_users_csv(users, path):
-    rows = [
-        {"id": u["id"], "name": _sanitize(u["name"]), "email": _sanitize(u["email"])}
-        for u in users
-    ]
-    _write_csv(path, ["id", "name", "email"], rows)
+    _write_csv(path, ["id", "name", "email"], users)
 
 
 def export_orders_csv(orders, path):
-    rows = [
-        {"id": o["id"], "user": _sanitize(o["user"]), "total": o["total"]}
-        for o in orders
-    ]
-    _write_csv(path, ["id", "user", "total"], rows)
+    _write_csv(path, ["id", "user", "total"], orders)
 
 
 def export_products_csv(products, path):
-    rows = [
-        {"sku": p["sku"], "name": _sanitize(p["name"]), "price": p["price"]}
-        for p in products
-    ]
-    _write_csv(path, ["sku", "name", "price"], rows)
+    _write_csv(path, ["sku", "name", "price"], products)
 ```
 
 ---
@@ -1434,7 +1307,7 @@ class Address:
     zip_code: str
     country: str
 
-    def format(self) -> str:
+    def __str__(self) -> str:
         return f"{self.name}\n{self.street}\n{self.zip_code} {self.city}\n{self.country}"
 
     @property
@@ -1457,15 +1330,17 @@ class Invoice:
     customer: Address
     items: List[LineItem] = field(default_factory=list)
 
-    def format_address(self) -> str:
-        return self.customer.format()
-
+    @property
     def tax_rate(self) -> float:
         return self.customer.tax_rate
 
+    @property
+    def subtotal(self) -> float:
+        return sum(item.subtotal for item in self.items)
+
+    @property
     def total(self) -> float:
-        subtotal = sum(item.subtotal for item in self.items)
-        return subtotal * (1 + self.tax_rate())
+        return self.subtotal * (1 + self.tax_rate)
 ```
 
 #### Variant C  (`af87`)
@@ -1473,12 +1348,12 @@ class Invoice:
 ```python
 from dataclasses import dataclass, field
 from typing import List
-
+from decimal import Decimal
 
 TAX_RATES = {
-    "DE": 0.19,
-    "AT": 0.20,
-    "US": 0.07,
+    "DE": Decimal("0.19"),
+    "AT": Decimal("0.20"),
+    "US": Decimal("0.07"),
 }
 
 
@@ -1491,21 +1366,16 @@ class Address:
     country: str
 
     def __str__(self) -> str:
-        return (
-            f"{self.name}\n"
-            f"{self.street}\n"
-            f"{self.zip_code} {self.city}\n"
-            f"{self.country}"
-        )
+        return f"{self.name}\n{self.street}\n{self.zip_code} {self.city}\n{self.country}"
 
 
 @dataclass
 class LineItem:
-    price: float
+    price: Decimal
     qty: int
 
     @property
-    def subtotal(self) -> float:
+    def subtotal(self) -> Decimal:
         return self.price * self.qty
 
 
@@ -1515,15 +1385,15 @@ class Invoice:
     items: List[LineItem] = field(default_factory=list)
 
     @property
-    def tax_rate(self) -> float:
-        return TAX_RATES.get(self.address.country, 0.0)
+    def tax_rate(self) -> Decimal:
+        return TAX_RATES.get(self.address.country, Decimal("0.0"))
 
     @property
-    def subtotal(self) -> float:
+    def subtotal(self) -> Decimal:
         return sum(item.subtotal for item in self.items)
 
     @property
-    def total(self) -> float:
+    def total(self) -> Decimal:
         return self.subtotal * (1 + self.tax_rate)
 ```
 
@@ -1557,6 +1427,10 @@ class Address:
             f"{self.country}"
         )
 
+    @property
+    def tax_rate(self) -> float:
+        return TAX_RATES.get(self.country, 0.0)
+
 
 @dataclass
 class LineItem:
@@ -1573,9 +1447,12 @@ class Invoice:
     address: Address
     items: List[LineItem] = field(default_factory=list)
 
+    def format_address(self) -> str:
+        return str(self.address)
+
     @property
     def tax_rate(self) -> float:
-        return TAX_RATES.get(self.address.country, 0.0)
+        return self.address.tax_rate
 
     @property
     def subtotal(self) -> float:
@@ -1713,7 +1590,7 @@ def create_report(title, author, start_date, end_date, include_charts,
 
 ```python
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Optional
 
 
 @dataclass
@@ -1727,19 +1604,27 @@ class ReportMetadata:
 
 
 @dataclass
-class ReportStyle:
-    header_color: str
-    footer_color: str
-    page_size: str
-    format_type: Literal["html", "markdown"] = "markdown"
-
-
-@dataclass
 class ReportSections:
-    include_summary: bool = True
+    include_summary: bool = False
     include_charts: bool = False
     include_tables: bool = False
     include_appendix: bool = False
+
+
+@dataclass
+class ReportStyle:
+    header_color: str = "#000000"
+    footer_color: str = "#000000"
+    page_size: str = "A4"
+    format_type: str = "text"
+
+
+@dataclass
+class ReportConfig:
+    metadata: ReportMetadata
+    sections: ReportSections = field(default_factory=ReportSections)
+    style: ReportStyle = field(default_factory=ReportStyle)
+    output_path: str = "report.txt"
 
 
 def _build_header(meta: ReportMetadata) -> str:
@@ -1752,14 +1637,12 @@ def _build_header(meta: ReportMetadata) -> str:
 
 def _build_body(sections: ReportSections) -> str:
     section_map = [
-        (sections.include_summary, "Summary"),
-        (sections.include_charts, "Charts"),
-        (sections.include_tables, "Tables"),
-        (sections.include_appendix, "Appendix"),
+        (sections.include_summary, "## Summary\n...\n"),
+        (sections.include_charts, "## Charts\n...\n"),
+        (sections.include_tables, "## Tables\n...\n"),
+        (sections.include_appendix, "## Appendix\n...\n"),
     ]
-    return "".join(
-        f"## {name}\n...\n" for include, name in section_map if include
-    )
+    return "".join(content for enabled, content in section_map if enabled)
 
 
 def _build_footer(style: ReportStyle) -> str:
@@ -1772,18 +1655,12 @@ def _apply_format(doc: str, style: ReportStyle) -> str:
     return doc
 
 
-def create_report(
-    meta: ReportMetadata,
-    style: ReportStyle,
-    sections: ReportSections,
-    output_path: str,
-) -> None:
-    header = _build_header(meta)
-    body = _build_body(sections)
-    footer = _build_footer(style)
-    doc = _apply_format(header + body + footer, style)
-
-    with open(output_path, "w") as f:
+def create_report(config: ReportConfig) -> None:
+    header = _build_header(config.metadata)
+    body = _build_body(config.sections)
+    footer = _build_footer(config.style)
+    doc = _apply_format(header + body + footer, config.style)
+    with open(config.output_path, "w") as f:
         f.write(doc)
 ```
 
@@ -1791,7 +1668,7 @@ def create_report(
 
 ```python
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Optional
 
 
 @dataclass
@@ -1800,20 +1677,20 @@ class ReportConfig:
     author: str
     start_date: str
     end_date: str
-    format_type: Literal["html", "markdown"]
+    format_type: str
     output_path: str
-    language: str = "en"
-    timezone: str = "UTC"
-    header_color: str = "#000000"
-    footer_color: str = "#000000"
-    page_size: str = "A4"
-    include_summary: bool = True
+    header_color: str
+    footer_color: str
+    page_size: str
+    language: str
+    timezone: str
     include_charts: bool = False
     include_tables: bool = False
+    include_summary: bool = False
     include_appendix: bool = False
 
 
-_SECTIONS = [
+SECTION_ORDER = [
     ("include_summary", "Summary"),
     ("include_charts", "Charts"),
     ("include_tables", "Tables"),
@@ -1821,38 +1698,37 @@ _SECTIONS = [
 ]
 
 
-def _build_header(config: ReportConfig) -> str:
+def _build_header(cfg: ReportConfig) -> str:
     return (
-        f"# {config.title}\n"
-        f"by {config.author} ({config.language})\n"
-        f"Period: {config.start_date} - {config.end_date} ({config.timezone})\n"
+        f"# {cfg.title}\n"
+        f"by {cfg.author} ({cfg.language})\n"
+        f"Period: {cfg.start_date} - {cfg.end_date} ({cfg.timezone})\n"
     )
 
 
-def _build_body(config: ReportConfig) -> str:
-    return "".join(
-        f"## {heading}\n...\n"
-        for attr, heading in _SECTIONS
-        if getattr(config, attr)
-    )
+def _build_body(cfg: ReportConfig) -> str:
+    sections = [
+        f"## {label}\n...\n"
+        for attr, label in SECTION_ORDER
+        if getattr(cfg, attr)
+    ]
+    return "".join(sections)
 
 
-def _build_footer(config: ReportConfig) -> str:
-    return f"<footer style='color:{config.footer_color}'>{config.page_size}</footer>"
+def _build_footer(cfg: ReportConfig) -> str:
+    return f"<footer style='color:{cfg.footer_color}'>{cfg.page_size}</footer>"
 
 
-def _apply_format(doc: str, config: ReportConfig) -> str:
-    if config.format_type == "html":
-        return f"<html style='color:{config.header_color}'>{doc}</html>"
+def _apply_format(doc: str, cfg: ReportConfig) -> str:
+    if cfg.format_type == "html":
+        return f"<html style='color:{cfg.header_color}'>{doc}</html>"
     return doc
 
 
-def create_report(config: ReportConfig) -> None:
-    doc = _apply_format(
-        _build_header(config) + _build_body(config) + _build_footer(config),
-        config,
-    )
-    with open(config.output_path, "w") as f:
+def create_report(cfg: ReportConfig) -> None:
+    doc = _build_header(cfg) + _build_body(cfg) + _build_footer(cfg)
+    doc = _apply_format(doc, cfg)
+    with open(cfg.output_path, "w") as f:
         f.write(doc)
 ```
 
@@ -2055,8 +1931,7 @@ def create_report(config: ReportConfig) -> None:
 #### Variant F  (`074f`)
 
 ```python
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass
@@ -2095,11 +1970,11 @@ def _build_header(cfg: ReportConfig) -> str:
 
 
 def _build_body(cfg: ReportConfig) -> str:
-    parts = []
-    for attr, heading in SECTIONS:
-        if getattr(cfg, attr):
-            parts.append(f"## {heading}\n...\n")
-    return "".join(parts)
+    return "".join(
+        f"## {heading}\n...\n"
+        for attr, heading in SECTIONS
+        if getattr(cfg, attr)
+    )
 
 
 def _build_footer(cfg: ReportConfig) -> str:
@@ -2221,7 +2096,7 @@ def calculate_shipping(package, carrier):
 #### Variant B  (`0f3b`)
 
 ```python
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -2230,40 +2105,15 @@ class CarrierConfig:
     base_rate: float
     weight_threshold: float
     weight_rate: float
-    express_multiplier: float
+    express_multiplier: Optional[float] = None
     international_surcharge: float = 0.0
-    express_before_international: bool = True
 
 
 CARRIER_CONFIGS = {
-    "ups": CarrierConfig(
-        base_rate=5.0,
-        weight_threshold=10,
-        weight_rate=0.5,
-        express_multiplier=1.8,
-    ),
-    "fedex": CarrierConfig(
-        base_rate=6.0,
-        weight_threshold=5,
-        weight_rate=0.6,
-        express_multiplier=2.0,
-        international_surcharge=15,
-        express_before_international=False,
-    ),
-    "dhl": CarrierConfig(
-        base_rate=7.0,
-        weight_threshold=2,
-        weight_rate=0.7,
-        express_multiplier=1.9,
-        international_surcharge=20,
-        express_before_international=False,
-    ),
-    "usps": CarrierConfig(
-        base_rate=4.0,
-        weight_threshold=1,
-        weight_rate=0.4,
-        express_multiplier=1.0,
-    ),
+    "ups":   CarrierConfig(base_rate=5.0, weight_threshold=10, weight_rate=0.5, express_multiplier=1.8),
+    "fedex": CarrierConfig(base_rate=6.0, weight_threshold=5,  weight_rate=0.6, express_multiplier=2.0, international_surcharge=15),
+    "dhl":   CarrierConfig(base_rate=7.0, weight_threshold=2,  weight_rate=0.7, express_multiplier=1.9, international_surcharge=20),
+    "usps":  CarrierConfig(base_rate=4.0, weight_threshold=1,  weight_rate=0.4),
 }
 
 
@@ -2274,20 +2124,15 @@ def calculate_shipping(package: dict, carrier: str) -> float:
 
     cost = config.base_rate
 
-    weight = package.get("weight", 0)
-    if weight > config.weight_threshold:
-        cost += (weight - config.weight_threshold) * config.weight_rate
+    excess_weight = package["weight"] - config.weight_threshold
+    if excess_weight > 0:
+        cost += excess_weight * config.weight_rate
 
-    if config.express_before_international:
-        if package.get("express"):
-            cost *= config.express_multiplier
-        if package.get("international"):
-            cost += config.international_surcharge
-    else:
-        if package.get("international"):
-            cost += config.international_surcharge
-        if package.get("express"):
-            cost *= config.express_multiplier
+    if package.get("international"):
+        cost += config.international_surcharge
+
+    if package.get("express") and config.express_multiplier is not None:
+        cost *= config.express_multiplier
 
     return cost
 ```
@@ -2295,7 +2140,7 @@ def calculate_shipping(package: dict, carrier: str) -> float:
 #### Variant C  (`b14d`)
 
 ```python
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -2304,11 +2149,88 @@ class CarrierConfig:
     base_rate: float
     weight_threshold: float
     weight_rate: float
-    express_multiplier: float
+    express_multiplier: Optional[float]
     international_surcharge: float = 0.0
+    apply_international_before_express: bool = False
 
 
-CARRIER_CONFIGS = {
+CARRIER_CONFIGS: dict[str, CarrierConfig] = {
+    "ups": CarrierConfig(
+        base_rate=5.0,
+        weight_threshold=10.0,
+        weight_rate=0.5,
+        express_multiplier=1.8,
+    ),
+    "fedex": CarrierConfig(
+        base_rate=6.0,
+        weight_threshold=5.0,
+        weight_rate=0.6,
+        express_multiplier=2.0,
+        international_surcharge=15.0,
+    ),
+    "dhl": CarrierConfig(
+        base_rate=7.0,
+        weight_threshold=2.0,
+        weight_rate=0.7,
+        express_multiplier=1.9,
+        international_surcharge=20.0,
+        apply_international_before_express=True,
+    ),
+    "usps": CarrierConfig(
+        base_rate=4.0,
+        weight_threshold=1.0,
+        weight_rate=0.4,
+        express_multiplier=None,
+    ),
+}
+
+
+def calculate_shipping(package: dict, carrier: str) -> float:
+    config = CARRIER_CONFIGS.get(carrier)
+    if config is None:
+        raise ValueError(f"unknown carrier: {carrier!r}")
+
+    cost = config.base_rate
+    weight = package["weight"]
+
+    if weight > config.weight_threshold:
+        cost += (weight - config.weight_threshold) * config.weight_rate
+
+    def apply_international(c: float) -> float:
+        if package.get("international") and config.international_surcharge:
+            c += config.international_surcharge
+        return c
+
+    def apply_express(c: float) -> float:
+        if package.get("express") and config.express_multiplier is not None:
+            c *= config.express_multiplier
+        return c
+
+    if config.apply_international_before_express:
+        cost = apply_express(apply_international(cost))
+    else:
+        cost = apply_international(apply_express(cost))
+
+    return cost
+```
+
+#### Variant D  (`576d`)
+
+```python
+from dataclasses import dataclass, field
+from typing import Optional
+
+
+@dataclass
+class CarrierConfig:
+    base_rate: float
+    weight_threshold: float
+    weight_rate: float
+    express_multiplier: Optional[float] = None
+    international_surcharge: Optional[float] = None
+
+
+CARRIER_CONFIGS: dict[str, CarrierConfig] = {
     "ups": CarrierConfig(
         base_rate=5.0,
         weight_threshold=10,
@@ -2333,68 +2255,7 @@ CARRIER_CONFIGS = {
         base_rate=4.0,
         weight_threshold=1,
         weight_rate=0.4,
-        express_multiplier=1.0,
     ),
-}
-
-
-def _apply_weight_surcharge(base: float, weight: float, config: CarrierConfig) -> float:
-    if weight > config.weight_threshold:
-        base += (weight - config.weight_threshold) * config.weight_rate
-    return base
-
-
-def _apply_international_surcharge(base: float, package: dict, config: CarrierConfig) -> float:
-    if package.get("international") and config.international_surcharge:
-        base += config.international_surcharge
-    return base
-
-
-def _apply_express_multiplier(base: float, package: dict, config: CarrierConfig) -> float:
-    if package.get("express"):
-        base *= config.express_multiplier
-    return base
-
-
-def calculate_shipping(package: dict, carrier: str) -> float:
-    config = CARRIER_CONFIGS.get(carrier)
-    if config is None:
-        raise ValueError(f"unknown carrier: {carrier!r}")
-
-    base = config.base_rate
-    base = _apply_weight_surcharge(base, package["weight"], config)
-
-    if carrier == "dhl":
-        base = _apply_international_surcharge(base, package, config)
-        base = _apply_express_multiplier(base, package, config)
-    else:
-        base = _apply_express_multiplier(base, package, config)
-        base = _apply_international_surcharge(base, package, config)
-
-    return base
-```
-
-#### Variant D  (`576d`)
-
-```python
-from dataclasses import dataclass
-from typing import Optional
-
-
-@dataclass
-class CarrierConfig:
-    base_rate: float
-    weight_threshold: float
-    weight_rate: float
-    express_multiplier: float
-    international_surcharge: float = 0.0
-
-
-CARRIER_CONFIGS = {
-    "ups":   CarrierConfig(base_rate=5.0, weight_threshold=10, weight_rate=0.5, express_multiplier=1.8),
-    "fedex": CarrierConfig(base_rate=6.0, weight_threshold=5,  weight_rate=0.6, express_multiplier=2.0, international_surcharge=15.0),
-    "dhl":   CarrierConfig(base_rate=7.0, weight_threshold=2,  weight_rate=0.7, express_multiplier=1.9, international_surcharge=20.0),
-    "usps":  CarrierConfig(base_rate=4.0, weight_threshold=1,  weight_rate=0.4, express_multiplier=1.0),
 }
 
 
@@ -2409,10 +2270,10 @@ def calculate_shipping(package: dict, carrier: str) -> float:
     if excess_weight > 0:
         cost += excess_weight * config.weight_rate
 
-    if package.get("international"):
+    if config.international_surcharge and package.get("international"):
         cost += config.international_surcharge
 
-    if package.get("express"):
+    if config.express_multiplier and package.get("express"):
         cost *= config.express_multiplier
 
     return cost
@@ -2715,10 +2576,10 @@ def overlaps(
 #### Variant C  (`75ce`)
 
 ```python
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
-@dataclass(frozen=True)
+@dataclass
 class TimeSlot:
     start_minutes: int
     duration_minutes: int
@@ -2730,60 +2591,64 @@ class TimeSlot:
     def overlaps(self, other: "TimeSlot") -> bool:
         return self.start_minutes < other.end_minutes and other.start_minutes < self.end_minutes
 
-    def __str__(self) -> str:
-        start_h, start_m = divmod(self.start_minutes, 60)
-        end_total = self.end_minutes
-        end_h, end_m = divmod(end_total, 60)
-        end_h %= 24
-        return f"{start_h:02d}:{start_m:02d}-{end_h:02d}:{end_m:02d}"
+    def _format_time(self, total_minutes: int) -> str:
+        hour = (total_minutes // 60) % 24
+        minute = total_minutes % 60
+        return f"{hour:02d}:{minute:02d}"
+
+    @property
+    def start_str(self) -> str:
+        return self._format_time(self.start_minutes)
+
+    @property
+    def end_str(self) -> str:
+        return self._format_time(self.end_minutes)
 
 
-def _parse_time(hour: int, minute: int) -> int:
-    if not (0 <= hour <= 23):
-        raise ValueError(f"Hour must be 0-23, got {hour}")
-    if not (0 <= minute <= 59):
-        raise ValueError(f"Minute must be 0-59, got {minute}")
-    return hour * 60 + minute
+@dataclass
+class Meeting:
+    slot: TimeSlot
+    participants: list[str] = field(default_factory=list)
+
+    @classmethod
+    def create(cls, start_hour: int, start_minute: int, duration_minutes: int, participants_csv: str) -> "Meeting":
+        if not (0 <= start_hour <= 23):
+            raise ValueError(f"Invalid hour: {start_hour}")
+        if not (0 <= start_minute <= 59):
+            raise ValueError(f"Invalid minute: {start_minute}")
+
+        participants = [p.strip() for p in participants_csv.split(",") if p.strip()]
+        invalid = [p for p in participants if "@" not in p]
+        if invalid:
+            raise ValueError(f"Invalid email(s): {', '.join(invalid)}")
+
+        slot = TimeSlot(
+            start_minutes=start_hour * 60 + start_minute,
+            duration_minutes=duration_minutes,
+        )
+        return cls(slot=slot, participants=participants)
+
+    def to_dict(self) -> dict:
+        return {
+            "start": self.slot.start_str,
+            "end": self.slot.end_str,
+            "participants": self.participants,
+        }
+
+    def overlaps(self, other: "Meeting") -> bool:
+        return self.slot.overlaps(other.slot)
 
 
-def _parse_participants(participants_csv: str) -> list[str]:
-    participants = [p.strip() for p in participants_csv.split(",") if p.strip()]
-    invalid = [p for p in participants if "@" not in p]
-    if invalid:
-        raise ValueError(f"Invalid email address(es): {', '.join(invalid)}")
-    return participants
-
-
-def schedule_meeting(
-    start_hour: int,
-    start_minute: int,
-    duration_minutes: int,
-    participants_csv: str,
-) -> dict:
-    start_total = _parse_time(start_hour, start_minute)
-    slot = TimeSlot(start_minutes=start_total, duration_minutes=duration_minutes)
-    participants = _parse_participants(participants_csv)
-
-    end_h, end_m = divmod(slot.end_minutes, 60)
-    end_h %= 24
-
-    return {
-        "start": f"{start_hour:02d}:{start_minute:02d}",
-        "end": f"{end_h:02d}:{end_m:02d}",
-        "participants": participants,
-    }
+def schedule_meeting(start_hour: int, start_minute: int, duration_minutes: int, participants_csv: str) -> dict:
+    return Meeting.create(start_hour, start_minute, duration_minutes, participants_csv).to_dict()
 
 
 def overlaps(
-    meeting_a_start_hour: int,
-    meeting_a_start_min: int,
-    meeting_a_duration: int,
-    meeting_b_start_hour: int,
-    meeting_b_start_min: int,
-    meeting_b_duration: int,
+    meeting_a_start_hour: int, meeting_a_start_min: int, meeting_a_duration: int,
+    meeting_b_start_hour: int, meeting_b_start_min: int, meeting_b_duration: int,
 ) -> bool:
-    slot_a = TimeSlot(_parse_time(meeting_a_start_hour, meeting_a_start_min), meeting_a_duration)
-    slot_b = TimeSlot(_parse_time(meeting_b_start_hour, meeting_b_start_min), meeting_b_duration)
+    slot_a = TimeSlot(meeting_a_start_hour * 60 + meeting_a_start_min, meeting_a_duration)
+    slot_b = TimeSlot(meeting_b_start_hour * 60 + meeting_b_start_min, meeting_b_duration)
     return slot_a.overlaps(slot_b)
 ```
 
@@ -2808,9 +2673,9 @@ class TimeSlot:
     @classmethod
     def from_hm(cls, hour: int, minute: int, duration_minutes: int) -> "TimeSlot":
         if not (0 <= hour <= 23):
-            raise ValueError(f"Hour must be 0–23, got {hour}")
+            raise ValueError(f"Hour must be 0-23, got {hour}")
         if not (0 <= minute <= 59):
-            raise ValueError(f"Minute must be 0–59, got {minute}")
+            raise ValueError(f"Minute must be 0-59, got {minute}")
         return cls(start_minutes=hour * 60 + minute, duration_minutes=duration_minutes)
 
     def start_label(self) -> str:
@@ -2956,9 +2821,9 @@ class TimeSlot:
     @classmethod
     def from_hm(cls, hour: int, minute: int, duration_minutes: int) -> "TimeSlot":
         if not (0 <= hour <= 23):
-            raise ValueError(f"Hour must be 0–23, got {hour}")
+            raise ValueError(f"Hour must be 0-23, got {hour}")
         if not (0 <= minute <= 59):
-            raise ValueError(f"Minute must be 0–59, got {minute}")
+            raise ValueError(f"Minute must be 0-59, got {minute}")
         return cls(start_minutes=hour * 60 + minute, duration_minutes=duration_minutes)
 
     def _as_hhmm(self, total_minutes: int) -> str:
@@ -3132,7 +2997,6 @@ def recommend(status: BMICategory, age: int) -> str:
 #### Variant C  (`80c2`)
 
 ```python
-from dataclasses import dataclass
 from enum import Enum
 
 
@@ -3143,55 +3007,37 @@ class BMICategory(Enum):
     OBESE = "obese"
 
 
-@dataclass(frozen=True)
-class BMIThreshold:
-    upper: float
-    category: BMICategory
-
-
-BMI_THRESHOLDS = [
-    BMIThreshold(upper=18.5, category=BMICategory.UNDERWEIGHT),
-    BMIThreshold(upper=25.0, category=BMICategory.NORMAL),
-    BMIThreshold(upper=30.0, category=BMICategory.OVERWEIGHT),
+_BMI_THRESHOLDS = [
+    (18.5, BMICategory.UNDERWEIGHT),
+    (25.0, BMICategory.NORMAL),
+    (30.0, BMICategory.OVERWEIGHT),
 ]
 
 
 def classify_bmi(weight_kg: float, height_m: float) -> BMICategory:
-    if height_m <= 0:
-        raise ValueError("height_m must be positive")
-    if weight_kg <= 0:
-        raise ValueError("weight_kg must be positive")
-
-    bmi = weight_kg / (height_m ** 2)
-
-    for threshold in BMI_THRESHOLDS:
-        if bmi < threshold.upper:
-            return threshold.category
-
+    bmi = weight_kg / height_m ** 2
+    for threshold, category in _BMI_THRESHOLDS:
+        if bmi < threshold:
+            return category
     return BMICategory.OBESE
 
 
 def recommend(category: BMICategory, age: int) -> str:
-    if category == BMICategory.UNDERWEIGHT:
+    if category is BMICategory.UNDERWEIGHT:
         return "see pediatrician" if age < 18 else "gain weight"
-
-    if category == BMICategory.NORMAL:
+    if category is BMICategory.NORMAL:
         return "maintain"
-
-    if category == BMICategory.OVERWEIGHT:
+    if category is BMICategory.OVERWEIGHT:
         return "light exercise" if age > 60 else "exercise more"
-
-    if category == BMICategory.OBESE:
+    if category is BMICategory.OBESE:
         return "consult doctor"
-
-    raise ValueError(f"Unhandled category: {category}")
+    raise ValueError(f"Unknown category: {category}")
 ```
 
 #### Variant D  (`5af4`)
 
 ```python
 from enum import Enum
-from dataclasses import dataclass
 
 
 class BMICategory(Enum):
@@ -3201,24 +3047,18 @@ class BMICategory(Enum):
     OBESE = "obese"
 
 
-@dataclass(frozen=True)
-class BMIThreshold:
-    upper: float
-    category: BMICategory
-
-
 _BMI_THRESHOLDS = [
-    BMIThreshold(18.5, BMICategory.UNDERWEIGHT),
-    BMIThreshold(25.0, BMICategory.NORMAL),
-    BMIThreshold(30.0, BMICategory.OVERWEIGHT),
+    (18.5, BMICategory.UNDERWEIGHT),
+    (25.0, BMICategory.NORMAL),
+    (30.0, BMICategory.OVERWEIGHT),
 ]
 
 
 def classify_bmi(weight_kg: float, height_m: float) -> BMICategory:
     bmi = weight_kg / (height_m ** 2)
-    for threshold in _BMI_THRESHOLDS:
-        if bmi < threshold.upper:
-            return threshold.category
+    for upper, category in _BMI_THRESHOLDS:
+        if bmi < upper:
+            return category
     return BMICategory.OBESE
 
 
@@ -3300,16 +3140,19 @@ class BMICategory(Enum):
     OBESE = "obese"
 
 
+_BMI_THRESHOLDS = [
+    (18.5, BMICategory.UNDERWEIGHT),
+    (25.0, BMICategory.NORMAL),
+    (30.0, BMICategory.OVERWEIGHT),
+]
+
+
 def classify_bmi(weight_kg: float, height_m: float) -> BMICategory:
-    bmi = weight_kg / (height_m ** 2)
-    if bmi < 18.5:
-        return BMICategory.UNDERWEIGHT
-    elif bmi < 25:
-        return BMICategory.NORMAL
-    elif bmi < 30:
-        return BMICategory.OVERWEIGHT
-    else:
-        return BMICategory.OBESE
+    bmi = weight_kg / height_m ** 2
+    for threshold, category in _BMI_THRESHOLDS:
+        if bmi < threshold:
+            return category
+    return BMICategory.OBESE
 
 
 def recommend(category: BMICategory, age: int) -> str:
@@ -3321,7 +3164,7 @@ def recommend(category: BMICategory, age: int) -> str:
         return "light exercise" if age > 60 else "exercise more"
     if category is BMICategory.OBESE:
         return "consult doctor"
-    raise ValueError(f"Unhandled BMI category: {category}")
+    raise ValueError(f"Unknown BMI category: {category}")
 ```
 
 ---
@@ -3543,7 +3386,7 @@ class Document:
 from enum import Enum, auto
 
 
-class DocumentState(Enum):
+class State(Enum):
     DRAFT = auto()
     SUBMITTED = auto()
     REVIEWED = auto()
@@ -3552,52 +3395,32 @@ class DocumentState(Enum):
     ARCHIVED = auto()
 
 
-_VALID_TRANSITIONS = {
-    DocumentState.DRAFT: {DocumentState.SUBMITTED},
-    DocumentState.SUBMITTED: {DocumentState.REVIEWED},
-    DocumentState.REVIEWED: {DocumentState.APPROVED, DocumentState.SUBMITTED},
-    DocumentState.APPROVED: {DocumentState.PUBLISHED},
-    DocumentState.PUBLISHED: {DocumentState.ARCHIVED},
-    DocumentState.ARCHIVED: set(),
-}
-
-
 class Document:
-    def __init__(self, text: str) -> None:
+    def __init__(self, text):
         self.text = text
-        self._state = DocumentState.DRAFT
+        self._state = State.DRAFT
 
-    @property
-    def state(self) -> DocumentState:
-        return self._state
+    def _require(self, condition, message="invalid transition"):
+        if not condition:
+            raise RuntimeError(message)
 
-    def _transition(self, target: DocumentState) -> None:
-        allowed = _VALID_TRANSITIONS.get(self._state, set())
-        if target not in allowed:
-            raise RuntimeError(
-                f"cannot transition from {self._state.name} to {target.name}"
-            )
-        self._state = target
+    def submit_for_review(self):
+        self._require(self._state == State.DRAFT, "cannot submit")
+        self._state = State.SUBMITTED
 
-    def submit_for_review(self) -> None:
-        self._transition(DocumentState.SUBMITTED)
+    def review(self, approved):
+        self._require(self._state == State.SUBMITTED, "cannot review")
+        self._state = State.APPROVED if approved else State.REVIEWED
 
-    def review(self, approved: bool) -> None:
-        if self._state != DocumentState.SUBMITTED:
-            raise RuntimeError(
-                f"cannot review a document in state {self._state.name}"
-            )
-        self._state = DocumentState.APPROVED if approved else DocumentState.REVIEWED
+    def publish(self):
+        self._require(self._state == State.APPROVED, "cannot publish")
+        self._state = State.PUBLISHED
 
-    def publish(self) -> None:
-        self._transition(DocumentState.PUBLISHED)
+    def archive(self):
+        self._require(self._state != State.ARCHIVED, "already archived")
+        self._state = State.ARCHIVED
 
-    def archive(self) -> None:
-        if self._state == DocumentState.ARCHIVED:
-            raise RuntimeError("already archived")
-        self._state = DocumentState.ARCHIVED
-
-    def status(self) -> str:
+    def status(self):
         return self._state.name.lower()
 ```
 
@@ -3616,53 +3439,37 @@ class DocumentState(Enum):
     ARCHIVED = auto()
 
 
-_VALID_TRANSITIONS = {
-    DocumentState.DRAFT: {DocumentState.SUBMITTED},
-    DocumentState.SUBMITTED: {DocumentState.REVIEWED},
-    DocumentState.REVIEWED: {DocumentState.APPROVED, DocumentState.SUBMITTED},
-    DocumentState.APPROVED: {DocumentState.PUBLISHED},
-    DocumentState.PUBLISHED: {DocumentState.ARCHIVED},
-    DocumentState.ARCHIVED: set(),
-}
-
-
 class Document:
-    def __init__(self, text: str) -> None:
+    def __init__(self, text):
         self.text = text
         self._state = DocumentState.DRAFT
 
     @property
-    def state(self) -> DocumentState:
+    def state(self):
         return self._state
 
-    def _transition(self, target: DocumentState) -> None:
-        allowed = _VALID_TRANSITIONS.get(self._state, set())
-        if target not in allowed:
-            raise RuntimeError(
-                f"cannot transition from {self._state.name} to {target.name}"
-            )
-        self._state = target
+    def status(self):
+        return self._state.name.lower()
 
-    def submit_for_review(self) -> None:
-        self._transition(DocumentState.SUBMITTED)
+    def submit_for_review(self):
+        if self._state is not DocumentState.DRAFT:
+            raise RuntimeError("cannot submit")
+        self._state = DocumentState.SUBMITTED
 
-    def review(self, approved: bool) -> None:
+    def review(self, approved):
         if self._state is not DocumentState.SUBMITTED:
-            raise RuntimeError(
-                f"cannot review a document in state {self._state.name}"
-            )
+            raise RuntimeError("cannot review")
         self._state = DocumentState.APPROVED if approved else DocumentState.REVIEWED
 
-    def publish(self) -> None:
-        self._transition(DocumentState.PUBLISHED)
+    def publish(self):
+        if self._state is not DocumentState.APPROVED:
+            raise RuntimeError("cannot publish")
+        self._state = DocumentState.PUBLISHED
 
-    def archive(self) -> None:
+    def archive(self):
         if self._state is DocumentState.ARCHIVED:
             raise RuntimeError("already archived")
         self._state = DocumentState.ARCHIVED
-
-    def status(self) -> str:
-        return self._state.name.lower()
 ```
 
 #### Variant F  (`6298`)
@@ -3680,28 +3487,22 @@ class DocumentState(Enum):
     ARCHIVED = auto()
 
 
-_VALID_TRANSITIONS = {
-    DocumentState.DRAFT: {DocumentState.SUBMITTED},
-    DocumentState.SUBMITTED: {DocumentState.REVIEWED},
-    DocumentState.REVIEWED: {DocumentState.APPROVED, DocumentState.SUBMITTED},
-    DocumentState.APPROVED: {DocumentState.PUBLISHED},
-    DocumentState.PUBLISHED: {DocumentState.ARCHIVED},
-    DocumentState.ARCHIVED: set(),
-}
-
-
 class Document:
+    _VALID_TRANSITIONS = {
+        DocumentState.DRAFT: {DocumentState.SUBMITTED},
+        DocumentState.SUBMITTED: {DocumentState.REVIEWED},
+        DocumentState.REVIEWED: {DocumentState.APPROVED, DocumentState.ARCHIVED},
+        DocumentState.APPROVED: {DocumentState.PUBLISHED, DocumentState.ARCHIVED},
+        DocumentState.PUBLISHED: {DocumentState.ARCHIVED},
+        DocumentState.ARCHIVED: set(),
+    }
+
     def __init__(self, text: str) -> None:
         self.text = text
         self._state = DocumentState.DRAFT
 
-    @property
-    def state(self) -> DocumentState:
-        return self._state
-
     def _transition(self, target: DocumentState) -> None:
-        allowed = _VALID_TRANSITIONS.get(self._state, set())
-        if target not in allowed:
+        if target not in self._VALID_TRANSITIONS[self._state]:
             raise RuntimeError(
                 f"cannot transition from {self._state.name} to {target.name}"
             )
@@ -3721,9 +3522,7 @@ class Document:
         self._transition(DocumentState.PUBLISHED)
 
     def archive(self) -> None:
-        if self._state == DocumentState.ARCHIVED:
-            raise RuntimeError("already archived")
-        self._state = DocumentState.ARCHIVED
+        self._transition(DocumentState.ARCHIVED)
 
     def status(self) -> str:
         return self._state.name.lower()
@@ -3775,8 +3574,7 @@ def set_retries(n):
 
 ```python
 import logging
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -3788,17 +3586,17 @@ class FetcherConfig:
 
 
 class Fetcher:
-    def __init__(self, config: Optional[FetcherConfig] = None):
-        self._config = config or FetcherConfig()
+    def __init__(self, config: FetcherConfig | None = None):
+        self.config = config or FetcherConfig()
         self._cache: dict[str, str] = {}
 
-    def fetch(self, url: str) -> Optional[str]:
+    def fetch(self, url: str) -> str | None:
         if url in self._cache:
             logger.debug("cache hit: %s", url)
             return self._cache[url]
 
         logger.debug("cache miss: %s", url)
-        for attempt in range(self._config.retries):
+        for attempt in range(self.config.retries):
             try:
                 data = "DATA:" + url
                 self._cache[url] = data
@@ -3816,11 +3614,11 @@ class Fetcher:
 
     @property
     def retries(self) -> int:
-        return self._config.retries
+        return self.config.retries
 
     @retries.setter
     def retries(self, n: int) -> None:
-        self._config.retries = n
+        self.config.retries = n
         logger.debug("retries set to %d", n)
 ```
 
@@ -3828,8 +3626,7 @@ class Fetcher:
 
 ```python
 import logging
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -3841,22 +3638,17 @@ class FetcherConfig:
 
 
 class Fetcher:
-    def __init__(self, config: Optional[FetcherConfig] = None):
-        self._config = config or FetcherConfig()
+    def __init__(self, config: FetcherConfig | None = None):
+        self.config = config or FetcherConfig()
         self._cache: dict[str, str] = {}
 
-    @property
-    def config(self) -> FetcherConfig:
-        return self._config
-
-    def fetch(self, url: str) -> Optional[str]:
+    def fetch(self, url: str) -> str | None:
         if url in self._cache:
             logger.debug("cache hit: %s", url)
             return self._cache[url]
 
         logger.debug("cache miss: %s", url)
-
-        for attempt in range(self._config.retries):
+        for attempt in range(self.config.retries):
             try:
                 data = "DATA:" + url
                 self._cache[url] = data
@@ -3873,18 +3665,15 @@ class Fetcher:
         logger.debug("cache cleared")
 
     def set_retries(self, n: int) -> None:
-        self._config.retries = n
+        self.config.retries = n
         logger.debug("retries set to %d", n)
 ```
 
 #### Variant C  (`a7f2`)
 
 ```python
-import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -3895,39 +3684,40 @@ class FetcherConfig:
 
 class Fetcher:
     def __init__(self, config: Optional[FetcherConfig] = None):
-        self._config = config or FetcherConfig()
+        self.config = config or FetcherConfig()
         self._cache: dict[str, str] = {}
+        self._log: list[str] = []
 
     @property
-    def config(self) -> FetcherConfig:
-        return self._config
+    def log(self) -> list[str]:
+        return self._log
 
     def fetch(self, url: str) -> Optional[str]:
         if url in self._cache:
-            logger.debug("cache hit: %s", url)
+            self._log.append(f"hit {url}")
             return self._cache[url]
 
-        logger.debug("cache miss: %s", url)
+        self._log.append(f"miss {url}")
 
-        for attempt in range(self._config.retries):
+        for _ in range(self.config.retries):
             try:
-                data = "DATA:" + url
+                data = f"DATA:{url}"
                 self._cache[url] = data
-                logger.info("fetched: %s", url)
+                self._log.append(f"ok {url}")
                 return data
             except Exception:
-                logger.warning("retry %d for %s", attempt + 1, url)
+                self._log.append(f"retry {url}")
 
-        logger.error("failed to fetch: %s", url)
+        self._log.append(f"fail {url}")
         return None
 
     def clear_cache(self) -> None:
         self._cache.clear()
-        logger.debug("cache cleared")
+        self._log.append("cache cleared")
 
     def set_retries(self, n: int) -> None:
-        self._config.retries = n
-        logger.debug("retries set to %d", n)
+        self.config.retries = n
+        self._log.append(f"retries={n}")
 ```
 
 #### Variant D  (`6dff`)

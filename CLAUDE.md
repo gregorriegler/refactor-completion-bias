@@ -7,7 +7,7 @@ Telling a model "it's okay if you don't finish" may produce better refactoring t
 - 10 Python examples in `examples.md`.
 - 2 conditions per example:
   - **control**: plain "refactor this code" prompt.
-  - **treatment**: same prompt plus "It's okay if you don't finish — partial, high-quality work is preferred over rushed completion."
+  - **treatment**: same prompt plus "It's okay if you don't finish."
 - 3 runs per condition per example.
 - Total: 60 outputs.
 
