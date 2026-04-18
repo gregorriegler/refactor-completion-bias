@@ -4,7 +4,7 @@
 
 When you ask a model to "refactor this code," it feels pressure to produce something complete and shippable within a single response. That pressure may bias it toward shallow, surface-level edits that finish cleanly, rather than deeper, riskier changes that might run long.
 
-**Hypothesis:** explicitly telling the model that incomplete work is acceptable ("it's okay if you don't finish — partial, high-quality work is preferred over rushed completion") lets it spend its budget on quality instead of completion, producing better refactorings on average.
+**Hypothesis:** explicitly telling the model that incomplete work is acceptable ("it's okay if you don't finish") lets it spend its budget on quality instead of completion, producing better refactorings on average.
 
 ## What was done
 
@@ -30,31 +30,33 @@ Mean rank, lower = better:
 
 | Condition | Overall mean rank |
 |---|---|
-| control | 3.94 |
-| treatment | **3.06** |
+| control | 3.80 |
+| treatment | **3.20** |
 
-Treatment won 7 of 10 examples (sign-test p ≈ 0.34 — not significant at n = 10, but directionally consistent).
+Treatment won 6 of 10 examples (sign-test p ≈ 0.75 — not significant at n = 10).
 
 Per-example means:
 
 | Example | Control | Treatment | Δ (T − C) |
 |---|---|---|---|
-| 1 | 4.11 | 2.89 | −1.22 |
-| 2 | 5.00 | 2.00 | −3.00 |
-| 3 | 3.22 | 3.78 | +0.56 |
-| 4 | 4.11 | 2.89 | −1.22 |
-| 5 | 3.33 | 3.67 | +0.33 |
-| 6 | 3.33 | 3.67 | +0.33 |
-| 7 | 3.78 | 3.22 | −0.56 |
-| 8 | 3.67 | 3.33 | −0.33 |
-| 9 | 4.33 | 2.67 | −1.67 |
-| 10 | 4.56 | 2.44 | −2.11 |
+| 1 | 4.56 | 2.44 | −2.11 |
+| 2 | 3.00 | 4.00 | +1.00 |
+| 3 | 3.00 | 4.00 | +1.00 |
+| 4 | 3.67 | 3.33 | −0.33 |
+| 5 | 3.22 | 3.78 | +0.56 |
+| 6 | 4.67 | 2.33 | −2.33 |
+| 7 | 4.00 | 3.00 | −1.00 |
+| 8 | 4.89 | 2.11 | −2.78 |
+| 9 | 3.33 | 3.67 | +0.33 |
+| 10 | 3.67 | 3.33 | −0.33 |
+
+The big treatment wins (Examples 1, 6, 8) and the modest losses (2, 3, 5) average out to a small directional effect. The largest gaps both ways come from real correctness or design differences the judges noticed in individual examples, not from a uniform shift.
 
 ### Caveats
 
 - The judges are themselves Claude subagents — Claude-rating-Claude risks shared stylistic biases.
-- Inter-judge Spearman correlation averages +0.69, with one example (6) where one judge disagreed with the other two. Judge 1 tended to miss behavior-changing bugs that Judges 2 and 3 caught.
 - 10 examples is underpowered for a significance test.
+- An earlier run included two extra sentences in the treatment prompt ("partial, high-quality work is preferred over rushed completion. Focus on the most valuable structural improvements; a thoughtful partial refactor is better than a rushed complete one.") The numbers above are the rerun with the strict one-sentence treatment. The directional effect shrunk noticeably (Δ went from −0.88 to −0.60) — most of the apparent earlier benefit may have come from the focus instruction, not the permission-to-stop-early sentence.
 
 ## Human spot-check
 
@@ -67,5 +69,7 @@ As an informal check, a human (the repo owner) was shown three blind head-to-hea
 | 8 (BMI magic numbers) | X | ✓ |
 
 Three for three in favor of treatment. Small sample, same direction as the blind judges, same direction as the hypothesis. Worth noting: on Example 6 the human also implicitly caught a correctness issue in the control variant (a silent FedEx ordering change) that the treatment variant avoided; on Example 8 the treatment pick was an API break (enum string values changed), so the human preference there was against behavior-preservation — a reminder that "looks better" and "is better" can diverge.
+
+Note: this spot-check was done against the original (three-sentence) treatment variants, before the strict-treatment rerun. The treatment outputs in `outputs/` have since been regenerated; the spot-check picks haven't been redone.
 
 Overall: the effect is small, directionally real in both machine and human judgements, and well short of statistical significance at this sample size. Treat as exploratory.
