@@ -50,16 +50,35 @@ mechanical effort (turns, tool calls, output tokens) can.
 
 ## Takeaway
 
-Under the tight harness every agent was pinned to ~5 turns / 2 tool
-calls / 0 thinking blocks — no effort variance at all. Under the loose
-harness, effort does move: loose / control stays at 5.2 turns but
-loose / treatment averages 6.5 turns and issues noticeably more `Read`
-calls. That's the opposite direction from the hypothesis — the "it's ok if
-you don't get to finish" wording did not reduce measurable effort here; if
-anything it increased it slightly, while equalising the output token counts
-that the tight harness had driven apart.
+The hypothesis is that removing completion pressure ("it's ok if you don't
+finish") lets the model iterate deeper instead of pushing toward a shallow
+but complete edit. That predicts **more** turns / tool calls / re-reads under
+treatment, not fewer.
+
+Under the tight harness every agent was pinned to ~5 turns / 2 tool calls /
+0 thinking blocks — no effort variance at all, so the mechanism could not
+operate. This is probably why the tight round's quality signal was weak:
+both conditions were forced into one-shot Read → Write and the treatment
+wording had no degree of freedom to spend.
+
+Under the loose harness, effort does move, and it moves in the direction
+the hypothesis predicts:
+
+- loose / control: 5.2 turns mean, 7 total Read calls
+- loose / treatment: 6.5 turns mean (median 7), **11** total Read calls
+
+Treatment agents are re-reading the snippet and taking more round-trips.
+Output tokens equalise at ~2750 (both conditions write full-sized
+refactorings) rather than splitting 2:1 the way they did under tight — i.e.
+under loose, treatment is no longer cutting the work short.
 
 With only 6 agents per loose condition this is directional, not
-statistically conclusive. What it does clearly show is that the loose
-harness *can* produce effort variance (tight cannot), so it is the right
-harness for a full-round effort study.
+statistically conclusive. What the pilot does establish is:
+
+1. The loose harness *can* produce measurable effort variance, in the
+   direction the hypothesis predicts.
+2. The tight harness masks the hypothesised mechanism entirely by fixing
+   effort, so using tight to measure this effect was a category error.
+
+This justifies running the full 15 × 2 × 3 round under the loose harness to
+get enough statistical power on both quality and effort.
