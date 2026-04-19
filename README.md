@@ -23,6 +23,7 @@ Files of interest:
 - `judge_letter_map.json` — per-example letter → ID shuffle used by judges.
 - `judge_rankings_{1,2,3}.md` — the three judges' blind rankings.
 - `analysis.md` — the computed results.
+- `rounds/` — future independent rounds live here (empty so far). See `CLAUDE.md` for the new-round runbook. Top-level files above are the frozen first-round baseline.
 
 ## Results
 

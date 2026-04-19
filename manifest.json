@@ -189,11 +189,6 @@
     "example": 9,
     "run": 3
   },
-  "6475": {
-    "condition": "treatment",
-    "example": 15,
-    "run": 4
-  },
   "671f": {
     "condition": "treatment",
     "example": 14,
@@ -514,11 +509,6 @@
     "example": 12,
     "run": 5
   },
-  "f78c": {
-    "condition": "treatment",
-    "example": 15,
-    "run": 3
-  },
   "f8c7": {
     "condition": "treatment",
     "example": 2,
@@ -528,11 +518,6 @@
     "condition": "treatment",
     "example": 11,
     "run": 2
-  },
-  "fab0": {
-    "condition": "treatment",
-    "example": 15,
-    "run": 5
   },
   "fb9b": {
     "condition": "control",

@@ -1,4 +1,13 @@
-"""Un-blind rankings and compute statistics for the refactor-completion-bias experiment."""
+"""Un-blind rankings and compute statistics for a refactor-completion-bias round.
+
+Usage:
+    python analyze.py [<round-dir>]
+
+If <round-dir> is omitted, defaults to the current working directory. The
+directory is expected to contain `manifest.json`, `judge_letter_map.json`,
+zero or more `judge_rankings_*.md` files, and optionally `rankings.md`.
+Writes `<round-dir>/analysis.md`.
+"""
 import json
 import math
 import pathlib
@@ -6,9 +15,21 @@ import re
 import sys
 from collections import defaultdict
 
-ROOT = pathlib.Path(__file__).parent
-MANIFEST = json.loads((ROOT / "manifest.json").read_text())
-LETTER_MAP = json.loads((ROOT / "judge_letter_map.json").read_text())
+
+def load_letter_map(raw: dict) -> dict[int, dict[str, str]]:
+    """Normalize the letter map into {example_int: {letter: id}}.
+
+    Supports both legacy flat form (`"<ex>.<letter>": "<id>"`) and the
+    nested form (`"<ex>": {"<letter>": "<id>"}`).
+    """
+    by_ex: dict[int, dict[str, str]] = defaultdict(dict)
+    for key, value in raw.items():
+        if isinstance(value, dict):
+            by_ex[int(key)] = dict(value)
+        else:
+            ex_str, letter = key.split(".")
+            by_ex[int(ex_str)][letter] = value
+    return dict(by_ex)
 
 
 def parse_ranking_file(path: pathlib.Path) -> dict[int, dict[str, int]]:
@@ -23,24 +44,39 @@ def parse_ranking_file(path: pathlib.Path) -> dict[int, dict[str, int]]:
             current_ex = int(m.group(1))
             result[current_ex] = {}
             continue
-        m = re.match(r"-?\s*([A-F])\s*=\s*(\d+)", line)
+        m = re.match(r"-?\s*([A-Z])\s*=\s*(\d+)", line)
         if m and current_ex is not None:
             letter, rank = m.group(1), int(m.group(2))
             result[current_ex][letter] = rank
     return result
 
 
-def validate(rankings: dict[int, dict[str, int]], source: str) -> list[str]:
-    errs = []
-    for ex in range(1, 11):
+def validate(
+    rankings: dict[int, dict[str, int]],
+    letter_map: dict[int, dict[str, str]],
+    source: str,
+) -> list[str]:
+    """Check ranks for examples that appear in both the judge file and the
+    letter map. Missing examples (judge didn't rank that example) are not an
+    error — they're just skipped during aggregation.
+    """
+    errs: list[str] = []
+    for ex, letters in letter_map.items():
         if ex not in rankings:
-            errs.append(f"{source}: missing Example {ex}")
             continue
+        expected_letters = set(letters.keys())
+        expected_ranks = list(range(1, len(expected_letters) + 1))
         r = rankings[ex]
-        if set(r.keys()) != set("ABCDEF"):
-            errs.append(f"{source}: Example {ex} has keys {sorted(r.keys())}")
-        if sorted(r.values()) != [1, 2, 3, 4, 5, 6]:
-            errs.append(f"{source}: Example {ex} ranks {sorted(r.values())}")
+        if set(r.keys()) != expected_letters:
+            errs.append(
+                f"{source}: Example {ex} has keys {sorted(r.keys())}, "
+                f"expected {sorted(expected_letters)}"
+            )
+        if sorted(r.values()) != expected_ranks:
+            errs.append(
+                f"{source}: Example {ex} ranks {sorted(r.values())}, "
+                f"expected {expected_ranks}"
+            )
     return errs
 
 
@@ -50,23 +86,34 @@ def sign_test_p(n_plus: int, n_minus: int) -> float:
     if n == 0:
         return 1.0
     k = min(n_plus, n_minus)
-
-    def binom(n, k):
-        return math.comb(n, k)
-
-    tail = sum(binom(n, i) for i in range(0, k + 1))
-    p_two_sided = min(1.0, 2.0 * tail / (2 ** n))
-    return p_two_sided
+    tail = sum(math.comb(n, i) for i in range(0, k + 1))
+    return min(1.0, 2.0 * tail / (2 ** n))
 
 
 def main() -> int:
-    # discover rankings files
-    candidates = sorted(ROOT.glob("judge_rankings_*.md"))
-    human = ROOT / "rankings.md"
+    if len(sys.argv) > 2:
+        print(__doc__)
+        return 2
+    round_dir = pathlib.Path(sys.argv[1]) if len(sys.argv) == 2 else pathlib.Path.cwd()
+    round_dir = round_dir.resolve()
+
+    manifest_path = round_dir / "manifest.json"
+    letter_map_path = round_dir / "judge_letter_map.json"
+    if not manifest_path.exists() or not letter_map_path.exists():
+        print(
+            f"expected manifest.json and judge_letter_map.json in {round_dir}",
+            file=sys.stderr,
+        )
+        return 2
+
+    manifest = json.loads(manifest_path.read_text())
+    letter_map = load_letter_map(json.loads(letter_map_path.read_text()))
+    examples = sorted(letter_map.keys())
+
+    candidates = sorted(round_dir.glob("judge_rankings_*.md"))
+    human = round_dir / "rankings.md"
     if human.exists():
-        # include only if the human actually filled in at least one rank line
-        # (strictly: a line beginning with "- X=" followed by a digit)
-        filled = re.findall(r"(?m)^-\s*[A-F]\s*=\s*\d", human.read_text())
+        filled = re.findall(r"(?m)^-\s*[A-Z]\s*=\s*\d", human.read_text())
         if filled:
             candidates.append(human)
 
@@ -74,12 +121,11 @@ def main() -> int:
         print("no ranking files found; fill rankings.md or wait for judge subagents")
         return 1
 
-    # parse + validate
     per_judge: dict[str, dict[int, dict[str, int]]] = {}
     errs: list[str] = []
     for p in candidates:
         r = parse_ranking_file(p)
-        errs.extend(validate(r, p.name))
+        errs.extend(validate(r, letter_map, p.name))
         per_judge[p.name] = r
 
     if errs:
@@ -88,43 +134,48 @@ def main() -> int:
             print(" -", e)
         return 2
 
-    # un-blind: for each judge × example × letter, look up (id, condition)
-    # aggregate: per-condition mean rank per example and overall
     condition_ranks_per_example: dict[int, dict[str, list[int]]] = {
-        ex: {"control": [], "treatment": []} for ex in range(1, 11)
+        ex: {"control": [], "treatment": []} for ex in examples
     }
     condition_ranks_overall: dict[str, list[int]] = {"control": [], "treatment": []}
-
-    # per-judge per-example deltas (treatment mean - control mean)
     deltas_by_judge_ex: dict[str, dict[int, float]] = defaultdict(dict)
 
     for judge_name, rankings in per_judge.items():
-        for ex in range(1, 11):
+        for ex in examples:
+            if ex not in rankings:
+                continue
             for letter, rank in rankings[ex].items():
-                anon_id = LETTER_MAP[f"{ex}.{letter}"]
-                cond = MANIFEST[anon_id]["condition"]
+                anon_id = letter_map[ex][letter]
+                cond = manifest[anon_id]["condition"]
                 condition_ranks_per_example[ex][cond].append(rank)
                 condition_ranks_overall[cond].append(rank)
             ctrl = [
                 rank
                 for letter, rank in rankings[ex].items()
-                if MANIFEST[LETTER_MAP[f"{ex}.{letter}"]]["condition"] == "control"
+                if manifest[letter_map[ex][letter]]["condition"] == "control"
             ]
             treat = [
                 rank
                 for letter, rank in rankings[ex].items()
-                if MANIFEST[LETTER_MAP[f"{ex}.{letter}"]]["condition"] == "treatment"
+                if manifest[letter_map[ex][letter]]["condition"] == "treatment"
             ]
-            deltas_by_judge_ex[judge_name][ex] = (
-                sum(treat) / len(treat) - sum(ctrl) / len(ctrl)
-            )
+            if ctrl and treat:
+                deltas_by_judge_ex[judge_name][ex] = (
+                    sum(treat) / len(treat) - sum(ctrl) / len(ctrl)
+                )
 
-    # summary
     lines: list[str] = []
-    lines.append("# Refactor Completion Bias — Analysis\n")
+    lines.append(f"# Refactor Completion Bias — Analysis ({round_dir.name})\n")
+    variants_per_example = {ex: len(letter_map[ex]) for ex in examples}
+    variant_summary = (
+        f"{next(iter(variants_per_example.values()))}"
+        if len(set(variants_per_example.values())) == 1
+        else "variable"
+    )
     lines.append(
         f"Judges: {len(per_judge)} ({', '.join(per_judge)}). "
-        "Each judge ranked 6 variants per example (1=best, 6=worst) blind to condition.\n\n"
+        f"Examples: {len(examples)}. Variants per example: {variant_summary}. "
+        "Ranks are 1=best, highest=worst, blind to condition.\n\n"
     )
 
     lines.append("## Headline\n\n")
@@ -150,10 +201,17 @@ def main() -> int:
     lines.append("## Per-example mean rank\n\n")
     lines.append("| Example | Control mean | Treatment mean | Δ (T−C) |\n")
     lines.append("|---|---|---|---|\n")
-    per_ex_deltas = []
-    for ex in range(1, 11):
+    per_ex_deltas: list[float] = []
+    for ex in examples:
         c = condition_ranks_per_example[ex]["control"]
         t = condition_ranks_per_example[ex]["treatment"]
+        if not c or not t:
+            lines.append(
+                f"| {ex} | "
+                f"{'—' if not c else f'{sum(c)/len(c):.2f}'} | "
+                f"{'—' if not t else f'{sum(t)/len(t):.2f}'} | — |\n"
+            )
+            continue
         cm = sum(c) / len(c)
         tm = sum(t) / len(t)
         d = tm - cm
@@ -161,11 +219,11 @@ def main() -> int:
         lines.append(f"| {ex} | {cm:.2f} | {tm:.2f} | {d:+.2f} |\n")
     lines.append("\n")
 
-    # sign test across examples: count how many examples treatment beat control (delta < 0)
     n_treatment_wins = sum(1 for d in per_ex_deltas if d < 0)
     n_control_wins = sum(1 for d in per_ex_deltas if d > 0)
     n_ties = sum(1 for d in per_ex_deltas if d == 0)
     p = sign_test_p(n_treatment_wins, n_control_wins)
+    n_scored = n_treatment_wins + n_control_wins + n_ties
     lines.append("## Sign test across examples\n\n")
     lines.append(
         f"Treatment wins (lower mean rank): **{n_treatment_wins}** examples. "
@@ -174,7 +232,7 @@ def main() -> int:
     )
     if p >= 0.05:
         lines.append(
-            "- Not statistically significant at α=0.05 with only 10 examples; "
+            f"- Not statistically significant at α=0.05 with n={n_scored} examples; "
             "treat as exploratory.\n\n"
         )
     else:
@@ -183,31 +241,32 @@ def main() -> int:
     lines.append("## Per-judge per-example deltas (treatment mean − control mean)\n\n")
     lines.append("| Example | " + " | ".join(per_judge.keys()) + " |\n")
     lines.append("|---" * (1 + len(per_judge)) + "|\n")
-    for ex in range(1, 11):
+    for ex in examples:
         row = [f"{ex}"]
         for judge_name in per_judge:
-            row.append(f"{deltas_by_judge_ex[judge_name][ex]:+.2f}")
+            d = deltas_by_judge_ex[judge_name].get(ex)
+            row.append("—" if d is None else f"{d:+.2f}")
         lines.append("| " + " | ".join(row) + " |\n")
     lines.append("\n")
 
     lines.append("## Caveats\n\n")
     lines.append(
-        "- Judges are themselves Claude subagents; this is Claude-rating-Claude and "
-        "may share systematic biases with the code producers.\n"
+        "- If judges are Claude subagents, this is Claude-rating-Claude and may "
+        "share systematic biases with the code producers.\n"
     )
     lines.append(
-        "- 10 examples × 2 conditions × 3 runs = 60 outputs. Variance between runs is "
-        "not separated from variance between conditions in the headline number; "
-        "the sign test across examples partially controls for this by treating each "
-        "example as one unit.\n"
+        f"- {len(examples)} examples × 2 conditions × runs per condition. Variance "
+        "between runs is not separated from variance between conditions in the "
+        "headline number; the sign test across examples partially controls for this "
+        "by treating each example as one unit.\n"
     )
     lines.append(
         "- A human judge would be the gold standard. `rankings.md` is the template "
         "for that.\n"
     )
 
-    (ROOT / "analysis.md").write_text("".join(lines))
-    print("wrote analysis.md")
+    (round_dir / "analysis.md").write_text("".join(lines))
+    print(f"wrote {round_dir / 'analysis.md'}")
     return 0
 
 
