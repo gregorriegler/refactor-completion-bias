@@ -10,7 +10,7 @@ When you ask a model to "refactor this code," it feels pressure to produce somet
 
 - 10 Python snippets in `examples/`, each a textbook refactor target (if/elif chains, feature envy, magic numbers, state flags, long parameter lists, etc.).
 - Two conditions per example. The literal prompt text sent to each subagent (appended after the snippet) is:
-  - **control** — `Refactor this code.`
+  - **control** — `Refactor this code to your best ability`
   - **treatment** — `Refactor this code. It's ok if you don't finish.`
 - 3 runs per condition per example → **60 outputs** in `outputs/`, each stored under a random 4-hex ID with no hint of its condition.
 - Blind ranking: 3 Claude subagent judges each ranked the 6 variants per example (1 = best, 6 = worst), seeing only anonymized letters.
