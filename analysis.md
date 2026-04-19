@@ -139,3 +139,25 @@ Treatment wins: **3** (11, 12, 13). Control wins: **1** (14). Ties: 0.
 ## Overall verdict
 
 The hypothesis that extensibility-aware judging would systematically shift results toward treatment is **not confirmed** for examples 11–14. Two examples move in treatment's favour (11, 12), two move against (13, 14). The structural extensibility patterns that judges reward — dispatch tables, typed accumulators, encapsulated methods — appear in both conditions; the "it's okay if you don't finish" prompt does not reliably produce more extensible code on harder examples.
+
+---
+
+# Round 2 Analysis (Haiku)
+
+Further rounds were conducted using **Claude Haiku** across an expanded set of 15 examples.
+
+## Quality and Effort (round-haiku-loose)
+
+Under a "loose" harness that allows models to take as many turns as they need, a strong correlation between the nudge, effort, and quality emerged.
+
+- **Treatment takes more effort**: Mean assistant turns increased from 5.42 (control) to **6.67** (treatment).
+- **Quality improves with effort**: Treatment won **10 of 15** examples, with an overall mean rank delta of **-0.48**.
+
+In contrast, when the harness was "tight" (pinning all agents to exactly 5 turns), the quality delta shrunk to **-0.11**, and treatment won only 8 of 15 examples.
+
+**Takeaway**: The "it's okay if you don't finish" nudge works by giving the model permission to iterate. When it iterates more, it produces better refactorings.
+
+Full details in:
+- `rounds/round-haiku/analysis.md` (Tight harness)
+- `rounds/round-haiku-loose/analysis.md` (Loose harness)
+- `rounds/round-haiku-loose/effort.md` (Effort metrics)
