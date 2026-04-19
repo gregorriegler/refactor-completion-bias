@@ -87,3 +87,63 @@ D=6
 E=3
 F=1
 note: F is cleanest — proper logging, config dataclass, set_retries method, no instance log list; D adds verbose property wrappers without benefit.
+
+## Example 11
+A=6
+B=4
+C=1
+D=2
+E=11
+F=5
+G=7
+H=9
+I=10
+J=8
+K=3
+L=12
+note: C ranks first for its clean (result, error) tuple returns, proper dataclasses with encapsulated add(), precise disc is None check, and well-named _read_csv_file helper; L ranks last due to a correctness bug in the multi-file merge that silently discards tax amounts.
+
+## Example 12
+A=4
+B=2
+C=5
+D=10
+E=11
+F=12
+G=1
+H=7
+I=9
+J=6
+K=8
+L=3
+note: G ranks first for combining a clean _Parser class with correct builtin dispatch (*args), good method decomposition, and clear helpers; F ranks last for a variable-shadowing correctness bug in the let branch on top of a changed builtin calling convention.
+
+## Example 13
+A=4
+B=1
+C=8
+D=5
+E=11
+F=6
+G=2
+H=9
+I=7
+J=12
+K=3
+L=10
+note: B ranks first for combining the cleanest decomposition (separate _price_event, COMMITMENT_DISCOUNTS table, correct defaults) while J ranks last for a truthy if inv: guard that silently drops zero-total invoices and an inconsistent mix of raw dicts and dataclasses.
+
+## Example 14
+A=7
+B=4
+C=8
+D=10
+E=1
+F=9
+G=12
+H=2
+I=11
+J=6
+K=5
+L=3
+note: E ranks first for combining the most semantic response helpers (ok/created/no_content), guard helpers for both auth and admin, expanded readable variable names, and the most thorough type annotations; G ranks last because it uses .replace("Bearer ", "") in two places.

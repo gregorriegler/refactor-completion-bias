@@ -1,4 +1,14 @@
 {
+  "01db": {
+    "condition": "treatment",
+    "example": 12,
+    "run": 2
+  },
+  "04f2": {
+    "condition": "treatment",
+    "example": 13,
+    "run": 4
+  },
   "074f": {
     "condition": "treatment",
     "example": 5,
@@ -8,6 +18,11 @@
     "condition": "control",
     "example": 2,
     "run": 3
+  },
+  "0df2": {
+    "condition": "control",
+    "example": 13,
+    "run": 2
   },
   "0e58": {
     "condition": "control",
@@ -23,6 +38,16 @@
     "condition": "control",
     "example": 2,
     "run": 2
+  },
+  "14b4": {
+    "condition": "treatment",
+    "example": 14,
+    "run": 1
+  },
+  "172c": {
+    "condition": "control",
+    "example": 11,
+    "run": 4
   },
   "192d": {
     "condition": "treatment",
@@ -59,6 +84,56 @@
     "example": 8,
     "run": 1
   },
+  "2524": {
+    "condition": "treatment",
+    "example": 14,
+    "run": 3
+  },
+  "2afe": {
+    "condition": "treatment",
+    "example": 11,
+    "run": 6
+  },
+  "2b88": {
+    "condition": "control",
+    "example": 14,
+    "run": 2
+  },
+  "2c6b": {
+    "condition": "treatment",
+    "example": 13,
+    "run": 6
+  },
+  "2d35": {
+    "condition": "treatment",
+    "example": 13,
+    "run": 2
+  },
+  "2e16": {
+    "condition": "control",
+    "example": 13,
+    "run": 6
+  },
+  "30d8": {
+    "condition": "treatment",
+    "example": 13,
+    "run": 3
+  },
+  "30e8": {
+    "condition": "treatment",
+    "example": 12,
+    "run": 6
+  },
+  "35fc": {
+    "condition": "control",
+    "example": 14,
+    "run": 1
+  },
+  "37d4": {
+    "condition": "treatment",
+    "example": 12,
+    "run": 4
+  },
   "3a92": {
     "condition": "treatment",
     "example": 2,
@@ -69,15 +144,35 @@
     "example": 5,
     "run": 3
   },
+  "458c": {
+    "condition": "control",
+    "example": 12,
+    "run": 2
+  },
   "4936": {
     "condition": "treatment",
     "example": 1,
     "run": 3
   },
+  "52b5": {
+    "condition": "treatment",
+    "example": 12,
+    "run": 1
+  },
+  "563d": {
+    "condition": "control",
+    "example": 11,
+    "run": 2
+  },
   "576d": {
     "condition": "treatment",
     "example": 6,
     "run": 2
+  },
+  "592f": {
+    "condition": "control",
+    "example": 13,
+    "run": 5
   },
   "5af4": {
     "condition": "treatment",
@@ -93,6 +188,16 @@
     "condition": "treatment",
     "example": 9,
     "run": 3
+  },
+  "6475": {
+    "condition": "treatment",
+    "example": 15,
+    "run": 4
+  },
+  "671f": {
+    "condition": "treatment",
+    "example": 14,
+    "run": 6
   },
   "6dff": {
     "condition": "control",
@@ -119,6 +224,11 @@
     "example": 7,
     "run": 3
   },
+  "74ee": {
+    "condition": "treatment",
+    "example": 12,
+    "run": 3
+  },
   "7523": {
     "condition": "control",
     "example": 3,
@@ -133,6 +243,16 @@
     "condition": "treatment",
     "example": 1,
     "run": 1
+  },
+  "7934": {
+    "condition": "control",
+    "example": 14,
+    "run": 6
+  },
+  "7d28": {
+    "condition": "control",
+    "example": 13,
+    "run": 4
   },
   "7f13": {
     "condition": "control",
@@ -154,6 +274,11 @@
     "example": 3,
     "run": 2
   },
+  "8263": {
+    "condition": "control",
+    "example": 11,
+    "run": 1
+  },
   "84c6": {
     "condition": "treatment",
     "example": 7,
@@ -162,6 +287,11 @@
   "892c": {
     "condition": "treatment",
     "example": 3,
+    "run": 3
+  },
+  "8b62": {
+    "condition": "control",
+    "example": 12,
     "run": 3
   },
   "8c3e": {
@@ -174,6 +304,16 @@
     "example": 9,
     "run": 1
   },
+  "8ca4": {
+    "condition": "treatment",
+    "example": 14,
+    "run": 5
+  },
+  "8de6": {
+    "condition": "control",
+    "example": 12,
+    "run": 4
+  },
   "8e70": {
     "condition": "control",
     "example": 4,
@@ -184,10 +324,30 @@
     "example": 2,
     "run": 3
   },
+  "94db": {
+    "condition": "control",
+    "example": 14,
+    "run": 4
+  },
+  "94dd": {
+    "condition": "treatment",
+    "example": 13,
+    "run": 5
+  },
   "9661": {
     "condition": "control",
     "example": 5,
     "run": 2
+  },
+  "9833": {
+    "condition": "control",
+    "example": 13,
+    "run": 1
+  },
+  "99e8": {
+    "condition": "treatment",
+    "example": 14,
+    "run": 4
   },
   "9abe": {
     "condition": "control",
@@ -209,6 +369,11 @@
     "example": 6,
     "run": 2
   },
+  "a435": {
+    "condition": "treatment",
+    "example": 14,
+    "run": 2
+  },
   "a7f2": {
     "condition": "treatment",
     "example": 10,
@@ -224,6 +389,11 @@
     "example": 4,
     "run": 1
   },
+  "b017": {
+    "condition": "control",
+    "example": 12,
+    "run": 1
+  },
   "b14d": {
     "condition": "treatment",
     "example": 6,
@@ -234,10 +404,35 @@
     "example": 10,
     "run": 1
   },
+  "b531": {
+    "condition": "treatment",
+    "example": 11,
+    "run": 4
+  },
+  "b819": {
+    "condition": "control",
+    "example": 11,
+    "run": 3
+  },
+  "b8c1": {
+    "condition": "control",
+    "example": 11,
+    "run": 6
+  },
+  "bcb5": {
+    "condition": "control",
+    "example": 14,
+    "run": 3
+  },
   "bdac": {
     "condition": "control",
     "example": 9,
     "run": 2
+  },
+  "be1f": {
+    "condition": "treatment",
+    "example": 11,
+    "run": 1
   },
   "c4b3": {
     "condition": "control",
@@ -247,6 +442,11 @@
   "cc1d": {
     "condition": "treatment",
     "example": 8,
+    "run": 1
+  },
+  "ce91": {
+    "condition": "treatment",
+    "example": 13,
     "run": 1
   },
   "dcab": {
@@ -259,10 +459,40 @@
     "example": 9,
     "run": 2
   },
+  "dff7": {
+    "condition": "control",
+    "example": 13,
+    "run": 3
+  },
+  "e3a4": {
+    "condition": "control",
+    "example": 12,
+    "run": 5
+  },
+  "e509": {
+    "condition": "treatment",
+    "example": 11,
+    "run": 5
+  },
+  "e645": {
+    "condition": "control",
+    "example": 14,
+    "run": 5
+  },
+  "e73c": {
+    "condition": "control",
+    "example": 11,
+    "run": 5
+  },
   "e8c6": {
     "condition": "treatment",
     "example": 5,
     "run": 1
+  },
+  "ebb3": {
+    "condition": "control",
+    "example": 12,
+    "run": 6
   },
   "ed76": {
     "condition": "control",
@@ -279,10 +509,30 @@
     "example": 9,
     "run": 1
   },
+  "f654": {
+    "condition": "treatment",
+    "example": 12,
+    "run": 5
+  },
+  "f78c": {
+    "condition": "treatment",
+    "example": 15,
+    "run": 3
+  },
   "f8c7": {
     "condition": "treatment",
     "example": 2,
     "run": 1
+  },
+  "f936": {
+    "condition": "treatment",
+    "example": 11,
+    "run": 2
+  },
+  "fab0": {
+    "condition": "treatment",
+    "example": 15,
+    "run": 5
   },
   "fb9b": {
     "condition": "control",
@@ -298,5 +548,10 @@
     "condition": "control",
     "example": 4,
     "run": 2
+  },
+  "ff4f": {
+    "condition": "treatment",
+    "example": 11,
+    "run": 3
   }
 }

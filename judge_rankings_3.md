@@ -87,3 +87,63 @@ D=5
 E=4
 F=1
 note: F is the clearest: logging module, config property, set_retries method, no property-setter complexity; C and D retain the log-list pattern which is inferior to Python's logging infrastructure.
+
+## Example 11
+A=2
+B=5
+C=1
+D=3
+E=10
+F=7
+G=6
+H=9
+I=11
+J=8
+K=4
+L=12
+note: C ranks first for its clean functional decomposition where _read_csv_file returns (rows, errors) and RegionData.add() is used consistently throughout; L ranks last due to a correctness bug in the cross-file accumulator merge that silently drops tax amounts.
+
+## Example 12
+A=1
+B=3
+C=11
+D=8
+E=12
+F=9
+G=4
+H=5
+I=6
+J=10
+K=7
+L=2
+note: A ranks first for combining a compiled regex tokenizer, correct builtin dispatch via *args, full type annotations, and clean module-level constants; E ranks last for having the list-call correctness bug while also retaining verbose double-index peek patterns and subtly mutating the caller's env copy.
+
+## Example 13
+A=2
+B=1
+C=9
+D=4
+E=10
+F=5
+G=6
+H=7
+I=8
+J=11
+K=3
+L=12
+note: B tops the ranking for combining a commitment-discount lookup table with a clean two-level usage dispatch and full correctness; L sits last because its USAGE_RULES list-of-tuples is rebuilt into a dict on every call, the weakest and least idiomatic dispatch design.
+
+## Example 14
+A=7
+B=4
+C=11
+D=9
+E=1
+F=8
+G=10
+H=2
+I=3
+J=5
+K=6
+L=12
+note: E ranks first for combining clean full-variable names, separate ok/created/no_content status helpers, walrus auth guards, and the richest type annotations; L ranks last because its _err(message, status) reverses the conventional (status, message) argument order.

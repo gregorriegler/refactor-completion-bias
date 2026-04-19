@@ -87,3 +87,63 @@ D=4
 E=6
 F=3
 note: B cleanest — logging module, FetcherConfig dataclass, set_retries method matches original API; E renames class to FetchClient (API breakage); C/D preserve instance log list (closer to original but log list is a design smell worth removing); A uses property setter for retries (elegant but changes calling convention)
+
+## Example 11
+A=3
+B=6
+C=1
+D=4
+E=9
+F=5
+G=7
+H=8
+I=11
+J=10
+K=2
+L=12
+note: C ranks first for its clean (value, err) tuple parse interface, typed constants, and graceful LATAM handling via None-check, while L ranks last for a correctness bug in the multi-file accumulator merge that silently undercounts tax.
+
+## Example 12
+A=1
+B=4
+C=6
+D=9
+E=11
+F=10
+G=3
+H=8
+I=12
+J=7
+K=5
+L=2
+note: A ranks first for combining a single compiled regex tokenizer with correct module-level constants, proper helper extraction, and no calling-convention bugs, while I ranks last for the awkward pre-computing-all-comparisons pattern in parse_cmp and the unused COMPOUND_OPS indirection.
+
+## Example 13
+A=6
+B=1
+C=8
+D=3
+E=12
+F=7
+G=5
+H=4
+I=9
+J=11
+K=2
+L=10
+note: B ranks first for combining a clean class-level USAGE_CONFIG dispatch table, a dedicated _price_event helper, a COMMITMENT_DISCOUNTS table, and usage-log pre-filtering; E ranks last because it mixes @dataclass engine with raw dict lines/invoices and risks a KeyError on commitment_months.
+
+## Example 14
+A=5
+B=3
+C=8
+D=11
+E=1
+F=10
+G=12
+H=4
+I=9
+J=2
+K=7
+L=6
+note: E ranks first for its granular response helpers, descriptive errors, _require_auth/_require_admin guards, and comprehensive type annotations; G ranks last for retaining .replace("Bearer ", "") instead of removeprefix.

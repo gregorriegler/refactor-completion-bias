@@ -136,3 +136,83 @@ Notes:
 
 ---
 
+
+---
+
+*Examples 11–14 below use 12 variants each (A–L). Rank 1–12, each used exactly once.*
+
+## Example 11: Legacy batch report generator (god function)
+
+- A=
+- B=
+- C=
+- D=
+- E=
+- F=
+- G=
+- H=
+- I=
+- J=
+- K=
+- L=
+
+Notes:
+
+---
+
+## Example 12: Mini expression interpreter (deep nesting, string dispatch)
+
+- A=
+- B=
+- C=
+- D=
+- E=
+- F=
+- G=
+- H=
+- I=
+- J=
+- K=
+- L=
+
+Notes:
+
+---
+
+## Example 13: Multi-tenant billing engine (tangled pricing rules)
+
+- A=
+- B=
+- C=
+- D=
+- E=
+- F=
+- G=
+- H=
+- I=
+- J=
+- K=
+- L=
+
+Notes:
+
+---
+
+## Example 14: Monolithic HTTP request handler
+
+- A=
+- B=
+- C=
+- D=
+- E=
+- F=
+- G=
+- H=
+- I=
+- J=
+- K=
+- L=
+
+Notes:
+
+---
