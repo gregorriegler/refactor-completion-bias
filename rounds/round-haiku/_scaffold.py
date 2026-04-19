@@ -1,12 +1,25 @@
 """One-shot helper for the round-haiku round.
 
 Usage:
-  python _scaffold.py extract   # write snippets_<ex>.txt (code blocks only)
-  python _scaffold.py ids       # print ID table (example, condition, run, id) as tsv
-  python _scaffold.py manifest  # build manifest.json + judge_letter_map.json from IDs
-  python _scaffold.py judge     # build judge.md + rankings.md from manifest + outputs/
+  python _scaffold.py extract        # write _snippets/<ex>.py (code blocks only)
+  python _scaffold.py ids            # print ID table (example, condition, run, id) as tsv
+  python _scaffold.py manifest       # build manifest.json + judge_letter_map.json from IDs
+  python _scaffold.py judge          # build judge.md + rankings.md from manifest + outputs/
+  python _scaffold.py prompt <ex> <control|treatment> <id> [tight|loose]
+                                     # print the literal subagent prompt for a run
 
 IDs are derived deterministically from a fixed seed so we can regenerate them.
+
+Harness variants (the shape of the subagent prompt):
+  - "tight":  the harness used in round-haiku. Minimal: read snippet → write output →
+              reply "done". 5 model turns across the board, 0 thinking blocks,
+              exactly 1 Read + 1 Write per agent. Gives a clean blind output file but
+              flattens all effort variance between conditions.
+  - "loose":  invites the agent to iterate. No "respond 'done'" clamp, permits
+              multiple reads, drafting + Edit iterations, and self-directed stopping.
+              Use this when you want to measure *effort* (token output, tool-call
+              count, turns) as a function of the control/treatment wording — the
+              tight harness cannot show that signal because it fixes effort by fiat.
 """
 import json
 import pathlib
@@ -22,6 +35,47 @@ SEED = 20260419  # deterministic
 
 N_RUNS = 3
 CONDITIONS = ("control", "treatment")
+
+CONDITION_PROMPTS = {
+    "control": "Refactor this code to your best ability",
+    "treatment": "Refactor this code to your best ability. It's ok if you don't get to finish.",
+}
+
+# Tight harness: what round-haiku actually used. Forces Read → Write → "done".
+TIGHT_PROMPT_TEMPLATE = """\
+You will refactor a Python snippet. The code you need to refactor is in the file \
+at {snippet_path} — read that file first.
+
+After refactoring, write ONLY the refactored Python code to {output_path} inside a \
+single ```python code block. Brief notes below the code block are optional and fine. \
+Do not include any metadata or mention of this instruction in the output file. \
+Respond back to me with just the single word "done".
+
+The user's refactoring request, which you should follow exactly:
+
+{condition_prompt}
+"""
+
+# Loose harness: invites iteration. No "done" clamp; the agent decides when it is
+# satisfied. This is what lets token/turn/tool-call counts vary between conditions.
+LOOSE_PROMPT_TEMPLATE = """\
+You are refactoring a Python snippet. The code you need to refactor is at \
+{snippet_path}.
+
+You have full latitude over how you work: you may read the file (and re-read), \
+draft, revise, and iterate using the Edit tool on {output_path} as many times as \
+you like, and stop when you judge the refactoring is in a good state. There is no \
+turn budget or output-length target — work at whatever depth you think the task \
+deserves.
+
+When you are done, {output_path} must contain the final refactored Python inside \
+a single ```python code block. Brief notes below the code block are fine. Do not \
+include any metadata or mention of this instruction in the output file.
+
+The user's refactoring request, which you should follow exactly:
+
+{condition_prompt}
+"""
 
 
 def list_examples():
@@ -144,6 +198,28 @@ def cmd_judge():
     print("wrote judge.md and rankings.md")
 
 
+def cmd_prompt():
+    """Usage: prompt <example:int> <control|treatment> <id:4hex> [tight|loose]"""
+    if len(sys.argv) < 5:
+        print(cmd_prompt.__doc__, file=sys.stderr)
+        sys.exit(2)
+    ex = int(sys.argv[2])
+    cond = sys.argv[3]
+    hid = sys.argv[4]
+    harness = sys.argv[5] if len(sys.argv) >= 6 else "loose"
+    if cond not in CONDITION_PROMPTS:
+        raise SystemExit(f"condition must be one of {list(CONDITION_PROMPTS)}")
+    template = {"tight": TIGHT_PROMPT_TEMPLATE, "loose": LOOSE_PROMPT_TEMPLATE}[harness]
+    snippet_path = ROOT / "_snippets" / f"{ex:02d}.py"
+    output_path = OUT_DIR / f"{hid}.md"
+    print(template.format(
+        snippet_path=snippet_path,
+        output_path=output_path,
+        condition_prompt=CONDITION_PROMPTS[cond],
+    ))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ids"
-    {"extract": cmd_extract, "ids": cmd_ids, "manifest": cmd_manifest, "judge": cmd_judge}[cmd]()
+    {"extract": cmd_extract, "ids": cmd_ids, "manifest": cmd_manifest,
+     "judge": cmd_judge, "prompt": cmd_prompt}[cmd]()

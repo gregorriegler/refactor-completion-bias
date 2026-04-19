@@ -1,0 +1,452 @@
+{
+  "9002": {
+    "example": 1,
+    "condition": "control",
+    "run": 1
+  },
+  "7a94": {
+    "example": 1,
+    "condition": "control",
+    "run": 2
+  },
+  "3eac": {
+    "example": 1,
+    "condition": "control",
+    "run": 3
+  },
+  "8710": {
+    "example": 1,
+    "condition": "treatment",
+    "run": 1
+  },
+  "d47d": {
+    "example": 1,
+    "condition": "treatment",
+    "run": 2
+  },
+  "fcc0": {
+    "example": 1,
+    "condition": "treatment",
+    "run": 3
+  },
+  "b954": {
+    "example": 2,
+    "condition": "control",
+    "run": 1
+  },
+  "53c3": {
+    "example": 2,
+    "condition": "control",
+    "run": 2
+  },
+  "e717": {
+    "example": 2,
+    "condition": "control",
+    "run": 3
+  },
+  "047f": {
+    "example": 2,
+    "condition": "treatment",
+    "run": 1
+  },
+  "4caa": {
+    "example": 2,
+    "condition": "treatment",
+    "run": 2
+  },
+  "9e19": {
+    "example": 2,
+    "condition": "treatment",
+    "run": 3
+  },
+  "649e": {
+    "example": 3,
+    "condition": "control",
+    "run": 1
+  },
+  "f05c": {
+    "example": 3,
+    "condition": "control",
+    "run": 2
+  },
+  "a3cf": {
+    "example": 3,
+    "condition": "control",
+    "run": 3
+  },
+  "9539": {
+    "example": 3,
+    "condition": "treatment",
+    "run": 1
+  },
+  "4a20": {
+    "example": 3,
+    "condition": "treatment",
+    "run": 2
+  },
+  "69b2": {
+    "example": 3,
+    "condition": "treatment",
+    "run": 3
+  },
+  "f8e4": {
+    "example": 4,
+    "condition": "control",
+    "run": 1
+  },
+  "228e": {
+    "example": 4,
+    "condition": "control",
+    "run": 2
+  },
+  "0927": {
+    "example": 4,
+    "condition": "control",
+    "run": 3
+  },
+  "e00e": {
+    "example": 4,
+    "condition": "treatment",
+    "run": 1
+  },
+  "a185": {
+    "example": 4,
+    "condition": "treatment",
+    "run": 2
+  },
+  "2e0c": {
+    "example": 4,
+    "condition": "treatment",
+    "run": 3
+  },
+  "dd14": {
+    "example": 5,
+    "condition": "control",
+    "run": 1
+  },
+  "d387": {
+    "example": 5,
+    "condition": "control",
+    "run": 2
+  },
+  "5d08": {
+    "example": 5,
+    "condition": "control",
+    "run": 3
+  },
+  "74ab": {
+    "example": 5,
+    "condition": "treatment",
+    "run": 1
+  },
+  "7b08": {
+    "example": 5,
+    "condition": "treatment",
+    "run": 2
+  },
+  "8b21": {
+    "example": 5,
+    "condition": "treatment",
+    "run": 3
+  },
+  "18c2": {
+    "example": 6,
+    "condition": "control",
+    "run": 1
+  },
+  "690c": {
+    "example": 6,
+    "condition": "control",
+    "run": 2
+  },
+  "f927": {
+    "example": 6,
+    "condition": "control",
+    "run": 3
+  },
+  "2c51": {
+    "example": 6,
+    "condition": "treatment",
+    "run": 1
+  },
+  "8d45": {
+    "example": 6,
+    "condition": "treatment",
+    "run": 2
+  },
+  "8c91": {
+    "example": 6,
+    "condition": "treatment",
+    "run": 3
+  },
+  "b136": {
+    "example": 7,
+    "condition": "control",
+    "run": 1
+  },
+  "7143": {
+    "example": 7,
+    "condition": "control",
+    "run": 2
+  },
+  "0635": {
+    "example": 7,
+    "condition": "control",
+    "run": 3
+  },
+  "e576": {
+    "example": 7,
+    "condition": "treatment",
+    "run": 1
+  },
+  "aa16": {
+    "example": 7,
+    "condition": "treatment",
+    "run": 2
+  },
+  "17f2": {
+    "example": 7,
+    "condition": "treatment",
+    "run": 3
+  },
+  "0209": {
+    "example": 8,
+    "condition": "control",
+    "run": 1
+  },
+  "6d91": {
+    "example": 8,
+    "condition": "control",
+    "run": 2
+  },
+  "d6b3": {
+    "example": 8,
+    "condition": "control",
+    "run": 3
+  },
+  "f112": {
+    "example": 8,
+    "condition": "treatment",
+    "run": 1
+  },
+  "6903": {
+    "example": 8,
+    "condition": "treatment",
+    "run": 2
+  },
+  "2bd2": {
+    "example": 8,
+    "condition": "treatment",
+    "run": 3
+  },
+  "cb0a": {
+    "example": 9,
+    "condition": "control",
+    "run": 1
+  },
+  "637f": {
+    "example": 9,
+    "condition": "control",
+    "run": 2
+  },
+  "3cd0": {
+    "example": 9,
+    "condition": "control",
+    "run": 3
+  },
+  "65fa": {
+    "example": 9,
+    "condition": "treatment",
+    "run": 1
+  },
+  "40bc": {
+    "example": 9,
+    "condition": "treatment",
+    "run": 2
+  },
+  "4efa": {
+    "example": 9,
+    "condition": "treatment",
+    "run": 3
+  },
+  "c8fd": {
+    "example": 10,
+    "condition": "control",
+    "run": 1
+  },
+  "92a7": {
+    "example": 10,
+    "condition": "control",
+    "run": 2
+  },
+  "a6a2": {
+    "example": 10,
+    "condition": "control",
+    "run": 3
+  },
+  "1e78": {
+    "example": 10,
+    "condition": "treatment",
+    "run": 1
+  },
+  "e063": {
+    "example": 10,
+    "condition": "treatment",
+    "run": 2
+  },
+  "dd4d": {
+    "example": 10,
+    "condition": "treatment",
+    "run": 3
+  },
+  "9a57": {
+    "example": 11,
+    "condition": "control",
+    "run": 1
+  },
+  "a3fd": {
+    "example": 11,
+    "condition": "control",
+    "run": 2
+  },
+  "e334": {
+    "example": 11,
+    "condition": "control",
+    "run": 3
+  },
+  "72fb": {
+    "example": 11,
+    "condition": "treatment",
+    "run": 1
+  },
+  "dc9f": {
+    "example": 11,
+    "condition": "treatment",
+    "run": 2
+  },
+  "b216": {
+    "example": 11,
+    "condition": "treatment",
+    "run": 3
+  },
+  "675f": {
+    "example": 12,
+    "condition": "control",
+    "run": 1
+  },
+  "28aa": {
+    "example": 12,
+    "condition": "control",
+    "run": 2
+  },
+  "bfe8": {
+    "example": 12,
+    "condition": "control",
+    "run": 3
+  },
+  "43f8": {
+    "example": 12,
+    "condition": "treatment",
+    "run": 1
+  },
+  "31f1": {
+    "example": 12,
+    "condition": "treatment",
+    "run": 2
+  },
+  "8ba9": {
+    "example": 12,
+    "condition": "treatment",
+    "run": 3
+  },
+  "aa60": {
+    "example": 13,
+    "condition": "control",
+    "run": 1
+  },
+  "dcdf": {
+    "example": 13,
+    "condition": "control",
+    "run": 2
+  },
+  "6e58": {
+    "example": 13,
+    "condition": "control",
+    "run": 3
+  },
+  "38af": {
+    "example": 13,
+    "condition": "treatment",
+    "run": 1
+  },
+  "c546": {
+    "example": 13,
+    "condition": "treatment",
+    "run": 2
+  },
+  "a209": {
+    "example": 13,
+    "condition": "treatment",
+    "run": 3
+  },
+  "733c": {
+    "example": 14,
+    "condition": "control",
+    "run": 1
+  },
+  "0e21": {
+    "example": 14,
+    "condition": "control",
+    "run": 2
+  },
+  "db89": {
+    "example": 14,
+    "condition": "control",
+    "run": 3
+  },
+  "6832": {
+    "example": 14,
+    "condition": "treatment",
+    "run": 1
+  },
+  "dc5d": {
+    "example": 14,
+    "condition": "treatment",
+    "run": 2
+  },
+  "1fcc": {
+    "example": 14,
+    "condition": "treatment",
+    "run": 3
+  },
+  "1239": {
+    "example": 15,
+    "condition": "control",
+    "run": 1
+  },
+  "ed91": {
+    "example": 15,
+    "condition": "control",
+    "run": 2
+  },
+  "8386": {
+    "example": 15,
+    "condition": "control",
+    "run": 3
+  },
+  "c754": {
+    "example": 15,
+    "condition": "treatment",
+    "run": 1
+  },
+  "ac75": {
+    "example": 15,
+    "condition": "treatment",
+    "run": 2
+  },
+  "4a31": {
+    "example": 15,
+    "condition": "treatment",
+    "run": 3
+  }
+}

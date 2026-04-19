@@ -1,0 +1,62 @@
+{
+  "8eac": {
+    "example": 11,
+    "condition": "control",
+    "run": 1
+  },
+  "afb0": {
+    "example": 11,
+    "condition": "control",
+    "run": 2
+  },
+  "fa17": {
+    "example": 11,
+    "condition": "treatment",
+    "run": 1
+  },
+  "583b": {
+    "example": 11,
+    "condition": "treatment",
+    "run": 2
+  },
+  "2ce4": {
+    "example": 13,
+    "condition": "control",
+    "run": 1
+  },
+  "72f9": {
+    "example": 13,
+    "condition": "control",
+    "run": 2
+  },
+  "a159": {
+    "example": 13,
+    "condition": "treatment",
+    "run": 1
+  },
+  "60a6": {
+    "example": 13,
+    "condition": "treatment",
+    "run": 2
+  },
+  "1f23": {
+    "example": 14,
+    "condition": "control",
+    "run": 1
+  },
+  "b0b7": {
+    "example": 14,
+    "condition": "control",
+    "run": 2
+  },
+  "1ed6": {
+    "example": 14,
+    "condition": "treatment",
+    "run": 1
+  },
+  "412a": {
+    "example": 14,
+    "condition": "treatment",
+    "run": 2
+  }
+}
