@@ -9,16 +9,19 @@ class BMICategory(Enum):
     OBESE = "obese"
 
 
+_BMI_THRESHOLDS = [
+    (18.5, BMICategory.UNDERWEIGHT),
+    (25.0, BMICategory.NORMAL),
+    (30.0, BMICategory.OVERWEIGHT),
+]
+
+
 def classify_bmi(weight_kg: float, height_m: float) -> BMICategory:
-    bmi = weight_kg / (height_m ** 2)
-    if bmi < 18.5:
-        return BMICategory.UNDERWEIGHT
-    elif bmi < 25:
-        return BMICategory.NORMAL
-    elif bmi < 30:
-        return BMICategory.OVERWEIGHT
-    else:
-        return BMICategory.OBESE
+    bmi = weight_kg / height_m ** 2
+    for threshold, category in _BMI_THRESHOLDS:
+        if bmi < threshold:
+            return category
+    return BMICategory.OBESE
 
 
 def recommend(category: BMICategory, age: int) -> str:
@@ -30,5 +33,5 @@ def recommend(category: BMICategory, age: int) -> str:
         return "light exercise" if age > 60 else "exercise more"
     if category is BMICategory.OBESE:
         return "consult doctor"
-    raise ValueError(f"Unhandled BMI category: {category}")
+    raise ValueError(f"Unknown BMI category: {category}")
 ```
