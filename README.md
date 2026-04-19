@@ -74,3 +74,18 @@ Three for three in favor of treatment. Small sample, same direction as the blind
 Note: this spot-check was done against the original (three-sentence) treatment variants, before the strict-treatment rerun. The treatment outputs in `outputs/` have since been regenerated; the spot-check picks haven't been redone.
 
 Overall: the effect is small, directionally real in both machine and human judgements, and well short of statistical significance at this sample size. Treat as exploratory.
+
+## Round 2: Haiku agents and Effort
+
+To test if the completion bias depends on the model's capacity or the harness's constraints, we ran further rounds using **Claude Haiku**.
+
+Key findings from `rounds/round-haiku-loose`:
+
+- **Effort moves with the nudge**: When the harness was "loose" (allowing more turns), the treatment group took significantly more effort.
+  - Mean assistant turns: control 5.42 vs **treatment 6.67** (Δ +1.24).
+  - Total `Read` calls: control 57 vs **treatment 75**.
+- **Quality follows effort**: In the loose harness, treatment won 10 of 15 examples (p ≈ 0.30), and the overall rank delta widened to **-0.48** (compared to -0.11 in a "tight" harness that restricted all agents to 5 turns).
+
+This supports the hypothesis: explicitly permitting incomplete work lets the model "spend" more effort on the task, which translates to better results. When the harness restricts this extra effort, the quality benefit mostly vanishes.
+
+See `rounds/round-haiku-loose/effort.md` for the full breakdown.
