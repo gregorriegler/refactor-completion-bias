@@ -7,7 +7,7 @@ Telling a model "it's okay if you don't finish" may produce better refactoring t
 - 10 Python examples in `examples/` (one file per snippet).
 - 2 conditions per example. The literal prompt text sent to each subagent (appended after the snippet) is:
   - **control**: `Refactor this code to your best ability`
-  - **treatment**: `Refactor this code. It's ok if you don't finish.`
+  - **treatment**: `Refactor this code to your best ability. It's ok if you don't get to finish.`
 - 3 runs per condition per example.
 - Total: 60 outputs.
 
