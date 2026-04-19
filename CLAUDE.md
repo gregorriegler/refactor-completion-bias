@@ -4,7 +4,7 @@
 Telling a model "it's okay if you don't finish" may produce better refactoring than a plain refactor prompt, because the latter pressures the model toward shallow but complete edits.
 
 ## Design
-- 10 Python examples in `examples.md`.
+- 10 Python examples in `examples/` (one file per snippet).
 - 2 conditions per example:
   - **control**: plain "refactor this code" prompt.
   - **treatment**: same prompt plus "It's okay if you don't finish."
@@ -12,7 +12,7 @@ Telling a model "it's okay if you don't finish" may produce better refactoring t
 - Total: 60 outputs.
 
 ## Files
-- `examples.md` — the 10 Python snippets (already written).
+- `examples/` — one markdown file per Python snippet (already written).
 - `outputs/` — one markdown file per run, named by anonymous ID (e.g. `outputs/a1f3.md`). Contents: the refactored code and any brief notes, with no hint of which condition produced it.
 - `manifest.json` — maps anonymous IDs to `(example_id, condition, run)`. Kept secret from the human judge until ranking is done.
 - `judge.md` — blind judging package: per example, lists the 6 anonymous IDs in shuffled order and asks the human to rank them 1..6 (1 = best).

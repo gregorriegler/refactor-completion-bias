@@ -8,7 +8,7 @@ When you ask a model to "refactor this code," it feels pressure to produce somet
 
 ## What was done
 
-- 10 Python snippets in `examples.md`, each a textbook refactor target (if/elif chains, feature envy, magic numbers, state flags, long parameter lists, etc.).
+- 10 Python snippets in `examples/`, each a textbook refactor target (if/elif chains, feature envy, magic numbers, state flags, long parameter lists, etc.).
 - Two conditions per example:
   - **control** — plain "refactor this code" prompt.
   - **treatment** — same prompt plus the "it's okay if you don't finish" line.
@@ -17,7 +17,7 @@ When you ask a model to "refactor this code," it feels pressure to produce somet
 - Un-blinding and stats in `analyze.py` → `analysis.md`.
 
 Files of interest:
-- `examples.md` — the 10 snippets.
+- `examples/` — one file per snippet.
 - `outputs/<id>.md` — one refactor per file.
 - `manifest.json` — ID → (example, condition, run). Hidden from judges.
 - `judge_letter_map.json` — per-example letter → ID shuffle used by judges.
